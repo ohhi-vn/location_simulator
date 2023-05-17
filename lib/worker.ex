@@ -20,7 +20,7 @@ defmodule LocationSimulator.Worker do
       error: 0
     }
 
-    id = Map.get(config, :id, self)
+    id = Map.get(config, :id, self())
     %{callback: mod} = config
 
     Logger.debug("#{inspect id}, call start event")
@@ -48,9 +48,9 @@ defmodule LocationSimulator.Worker do
 
     state = Map.put(state, :gps, gps)
 
-    counter = Map.get(config, :counter, :infinity)
+    counter = Map.get(config, :event, :infinity)
 
-    Logger.debug("start loop send request")
+    Logger.debug("start loop with counter: #{inspect counter}")
     loop_event(config, state, counter)
   end
 
@@ -64,16 +64,12 @@ defmodule LocationSimulator.Worker do
     }
   end
 
-  @doc """
-  loop function, generate fake data and send to frontend api.
-  in case counter < 0 -> infinity request will send to server.
-  """
   defp loop_event(config, state, 0) do
     stop_time = get_timestamp()
     state = Map.put(state, :stop_time, stop_time)
     %{callback: mod} = config
     # send stop event
-    config = case mod.end(config, state) do
+    config = case mod.stop(config, state) do
       {:ok, new_config} ->
         new_config
       {:error, reason} ->
@@ -87,8 +83,8 @@ defmodule LocationSimulator.Worker do
     %{failed: f} = state
     %{error: e} = state
 
-    id = Map.get(config, :id, self)
-    Logger.debug "Worker(#{id}) DONE!, time: #{stop_time - start_time}s, success: #{s}, failed: #{f}, error: #{e}"
+    id = Map.get(config, :id, self())
+    Logger.debug "Worker(#{inspect id}) DONE!, time: #{stop_time - start_time}s, success: #{s}, failed: #{f}, error: #{e}"
   end
   defp loop_event(config, %{gps: last_gps} = state, counter) do
 
@@ -110,13 +106,14 @@ defmodule LocationSimulator.Worker do
     %{callback: mod} = config
 
     {config, state, counter} =
-      case mod.event("gps", state) do
+      case mod.event(config, state) do
         {:ok, config} ->
           {config, Map.update!(state, :success, &(&1 + 1)), counter}
         {:error, reason} ->
           Logger.debug "failed to post data return code: #{inspect reason}"
           {config, Map.update!(state, :failed, &(&1 + 1)), counter}
         {:stop, reason} ->
+          Logger.debug "stop worker, reason: #{inspect reason}"
           {config, state, :stop}
       end
 
@@ -124,16 +121,13 @@ defmodule LocationSimulator.Worker do
         :infinity ->
           loop_event(config, state, counter)
         :stop ->
-          id = Map.get(config, :id, self)
+          id = Map.get(config, :id, self())
           Logger.debug("#{inspect id} stop by callback, reason: #{inspect id}")
         _ ->
           loop_event(config, state, counter-1)
       end
   end
 
-  @doc """
-  Gets timestamp from os.
-  """
   defp get_timestamp do
     :os.system_time(:seconds)
   end

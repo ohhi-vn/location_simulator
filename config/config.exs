@@ -1,8 +1,8 @@
 import Config
 
 config :location_simulator, :default_config,
-  event: 1,
-  worker: 1,
+  event: 10,
+  worker: 3,
   interval: 100,
   random_range: 10,
-  mod:  LocationSimulator.LoggerEvent
+  callback:  LocationSimulator.LoggerEvent

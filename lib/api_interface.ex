@@ -9,18 +9,35 @@ defmodule LocationSimulator do
   Start with config
   """
   def start(config) when is_map(config) do
-    Sup.start_childrens(config)
+    config
+    |> generate_worker()
+    |> Sup.start_childrens()
   end
 
   @doc """
   Start with default config
   """
   def start() do
-    Sup.start_childrens(default_config())
+    default_config()
+    |> generate_worker()
+    |> Sup.start_childrens()
   end
 
 
   ## private functions ##
+
+  defp generate_worker(config) do
+    %{worker: worker} = config
+    generate_worker(worker, config, [])
+  end
+
+  defp generate_worker(0, _config, workers) do
+    workers
+  end
+
+  defp generate_worker(counter, config, workers) do
+    generate_worker(counter-1, config, [{LocationSimulator.Worker, config} | workers])
+  end
 
   defp default_config() do
     Logger.info("generating worker from config")
@@ -45,7 +62,7 @@ defmodule LocationSimulator do
     interval =
       case config[:interval] do
         nil ->
-          1000
+          100
         n when is_integer(n)->
             n
       end
@@ -53,16 +70,25 @@ defmodule LocationSimulator do
     random_range =
       case config[:random_range] do
         nil ->
-          100
+          10
         n when is_integer(n)->
             n
+      end
+
+    mod =
+      case config[:callback] do
+        nil ->
+          raise "missed callback module"
+        m ->
+            m
       end
 
     %{
       worker: worker,
       event: event,
       interval: interval,
-      random_range: random_range
+      random_range: random_range,
+      callback: mod
     }
   end
 end

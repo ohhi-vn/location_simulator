@@ -1,12 +1,39 @@
 defmodule LocationSimulator do
   @moduledoc """
+  This is main api of library.
+
+  To start simple call
+    iex> LocationSimulator.start()
+
+  Or start with your config
+    iex> LocationSimulator.start(config)
+
   """
   require Logger
 
   alias LocationSimulator.DynamicSupervisor, as: Sup
 
   @doc """
-  Start with config
+  Start with config.
+
+  The config is a map type.
+
+  Config has info like:
+
+    ```
+    %{
+      worker: 3,  # number of worker will run
+      event: 100, # number of GPS events will be trigger
+      interval: 1000, # this & random_range used for sleep between GPS events, if value is :infinity worker will run forever (you still stop by return {:stop, reason})
+      random_range: 0, # 0 mean no random, other positive will be used for generate extra random sleep time
+      callback: MyCallbackModule # your module will handle data
+    }
+    ```
+
+
+  If you need pass your data to callback module you can add that in the config.
+
+  The config can be change after every event.
   """
   def start(config) when is_map(config) do
     config
@@ -15,7 +42,9 @@ defmodule LocationSimulator do
   end
 
   @doc """
-  Start with default config
+  Start with default config.
+
+  In this case, library just uses Logger to log data in every event.
   """
   def start() do
     default_config()
@@ -23,6 +52,9 @@ defmodule LocationSimulator do
     |> Sup.start_childrens()
   end
 
+  @doc """
+  Get default config of library.
+  """
   def default_config() do
     Logger.debug("generating worker from config")
     config = Application.get_env(:location_simulator, :default_config)

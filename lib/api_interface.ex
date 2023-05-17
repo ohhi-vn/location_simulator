@@ -23,24 +23,8 @@ defmodule LocationSimulator do
     |> Sup.start_childrens()
   end
 
-
-  ## private functions ##
-
-  defp generate_worker(config) do
-    %{worker: worker} = config
-    generate_worker(worker, config, [])
-  end
-
-  defp generate_worker(0, _config, workers) do
-    workers
-  end
-
-  defp generate_worker(counter, config, workers) do
-    generate_worker(counter-1, config, [{LocationSimulator.Worker, config} | workers])
-  end
-
-  defp default_config() do
-    Logger.info("generating worker from config")
+  def default_config() do
+    Logger.debug("generating worker from config")
     config = Application.get_env(:location_simulator, :default_config)
     worker =
       case config[:worker] do
@@ -90,5 +74,20 @@ defmodule LocationSimulator do
       random_range: random_range,
       callback: mod
     }
+  end
+
+  ## private functions ##
+
+  defp generate_worker(config) do
+    %{worker: worker} = config
+    generate_worker(worker, config, [])
+  end
+
+  defp generate_worker(0, _config, workers) do
+    workers
+  end
+
+  defp generate_worker(counter, config, workers) do
+    generate_worker(counter-1, config, [{LocationSimulator.Worker, config} | workers])
   end
 end

@@ -21,6 +21,14 @@ defmodule LocationSimulator.LoggerEvent do
   end
 
   @impl true
+  @spec stop(map, %{
+          :error => any,
+          :failed => any,
+          :start_time => any,
+          :stop_time => any,
+          :success => any,
+          optional(any) => any
+        }) :: {:ok, map}
   def stop(config, state) do
     id = Map.get(config, :id, self())
     %{start_time: start_time} = state

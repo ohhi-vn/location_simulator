@@ -1,9 +1,9 @@
-defmodule PrintConsole.MixProject do
+defmodule GenerateGpx.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :print_console,
+      app: :generate_gpx,
       version: "0.1.0",
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
@@ -21,8 +21,7 @@ defmodule PrintConsole.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
+      {:location_simulator, ">= 0.0.0"}
     ]
   end
 end

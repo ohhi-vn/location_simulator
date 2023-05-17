@@ -40,7 +40,8 @@ defmodule LocationSimulator.MixProject do
       # {:nestru, "~> 0.3.2"},
       # {:jason, "~> 1.4.0"},
       {:math, "~> 0.7.0"},
-      {:random, "~> 0.2.4"}
+      {:random, "~> 0.2.4"},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
 

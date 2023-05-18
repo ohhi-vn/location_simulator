@@ -1,4 +1,4 @@
-defmodule LocationSimulator.GpxWriter do
+defmodule GenerateGpx.GpxWriter do
   @moduledoc """
   Generates a GPX file. Gps data is single waypoint with series of track points.
   """
@@ -22,27 +22,26 @@ defmodule LocationSimulator.GpxWriter do
     case File.write(file, header, [:write]) do
       :ok ->
         {:ok, config}
-      {:error, reason} = failed ->
+      {:error, _reason} = failed ->
         failed
     end
-    {:ok, config}
   end
 
   @impl true
   def event(%{file: file} = config, %{gps: gps} = _state) do
     time = DateTime.utc_now()
-    str = ~s(<trkpt lat="#{gps.lati}" lon="#{gps.long}"><ele>#{gps.alti}</ele><time>#{DateTime.to_string(time)}</time></trkpt>)
+    str = ~s(<trkpt lat="#{gps.lati}" lon="#{gps.long}"><ele>#{gps.alti}</ele><time>#{DateTime.to_string(time)}</time></trkpt>\n)
 
     case File.write(file, str, [:append]) do
       :ok ->
         {:ok, config}
-      {:error, reason} = failed ->
+      {:error, _reason} = failed ->
         failed
     end
   end
 
   @impl true
-  def stop(%{file: file} = config, state) do
+  def stop(%{file: file} = config, _state) do
     footer = """
     </trkseg></trk>
     </gpx>
@@ -50,10 +49,8 @@ defmodule LocationSimulator.GpxWriter do
     case File.write(file, footer, [:append]) do
       :ok ->
         {:ok, config}
-      {:error, reason} = failed ->
+      {:error, _reason} = failed ->
         failed
     end
-
-    {:ok, config}
   end
 end

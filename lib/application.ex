@@ -12,7 +12,9 @@ defmodule LocationSimulator.Application do
     Logger.debug("start LocationSimulator app")
 
     children = [
-      {LocationSimulator.DynamicSupervisor, []}
+      {PartitionSupervisor,
+       child_spec: DynamicSupervisor,
+       name: LocationSimulator.DynamicSupervisor}
     ]
 
     Logger.debug("LocationSimulator application load with children: #{inspect children}")

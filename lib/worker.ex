@@ -1,17 +1,46 @@
 defmodule LocationSimulator.Worker do
   @moduledoc """
+  Worker is a simulator that use for generating GPS data.
 
+  Worker will call client follow :callback setting in config.
+
+  Two start/stop event is used for start or init data and clean if need.
+
+  event api is used for put GPS data to client.
   """
 
   require Logger
 
   import LocationSimulator.Gps
 
+  @doc """
+  Support for starting from supervisor.
+  """
   def start_link(arg) do
     pid = spawn_link(__MODULE__, :init, [arg])
     {:ok, pid}
   end
+\
+  @doc """
+  Generate child spec for supervisor.
+  """
+  def child_spec(opts) when is_map(opts) do
+    %{
+      id: Map.get(opts, :id, __MODULE__),
+      start: {__MODULE__, :start_link, [opts]},
+      type: :worker,
+      restart:  Map.get(opts, :restart, :temporary),
+      shutdown: Map.get(opts, :shutdown, :brutal_kill)
+    }
+  end
 
+  @doc """
+  Entry point of worker, start event will be fired from here.
+
+  Init some data and go to loop function for generating GPS data.
+
+  Root GPS data will be generated in this function.
+  """
   def init(config) when is_map(config) do
     state = %{
       start_time: get_timestamp(),
@@ -54,16 +83,11 @@ defmodule LocationSimulator.Worker do
     loop_event(config, state, counter)
   end
 
-  def child_spec(opts) when is_map(opts) do
-    %{
-      id: Map.get(opts, :id, __MODULE__),
-      start: {__MODULE__, :start_link, [opts]},
-      type: :worker,
-      restart:  Map.get(opts, :restart, :temporary),
-      shutdown: Map.get(opts, :shutdown, :brutal_kill)
-    }
-  end
+  @doc """
+  Main function of worker, GPS data will be generated in here then trigger client's api.
 
+  After fired all GPS data/ client send signal to stop, the function will fire stop event.
+  """
   defp loop_event(config, state, 0) do
     stop_time = get_timestamp()
     state = Map.put(state, :stop_time, stop_time)
@@ -86,6 +110,7 @@ defmodule LocationSimulator.Worker do
     id = Map.get(config, :id, self())
     Logger.debug "Worker(#{inspect id}) DONE!, time: #{stop_time - start_time}s, success: #{s}, failed: #{f}, error: #{e}"
   end
+
   defp loop_event(config, %{gps: last_gps} = state, counter) do
 
     {lati, long} = generate_next_pos(last_gps.lati, last_gps.long, Enum.random(1..5), Enum.random(1..5))
@@ -113,7 +138,7 @@ defmodule LocationSimulator.Worker do
           Logger.debug "failed to post data return code: #{inspect reason}"
           {config, Map.update!(state, :failed, &(&1 + 1)), counter}
         {:stop, reason} ->
-          Logger.debug "stop worker, reason: #{inspect reason}"
+          Logger.debug "stop worker by client, reason: #{inspect reason}"
           {config, state, :stop}
       end
 
@@ -123,6 +148,7 @@ defmodule LocationSimulator.Worker do
         :stop ->
           id = Map.get(config, :id, self())
           Logger.debug("#{inspect id} stop by callback, reason: #{inspect id}")
+          loop_event(config, state, 0)
         _ ->
           loop_event(config, state, counter-1)
       end

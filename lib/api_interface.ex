@@ -23,7 +23,7 @@ defmodule LocationSimulator do
     ```
     %{
       worker: 3,  # number of worker will run
-      event: 100, # number of GPS events will be trigger
+      event: 100, # number of GPS events will be trigger for a worker
       interval: 1000, # this & random_range used for sleep between GPS events, if value is :infinity worker will run forever (you still stop by return {:stop, reason})
       random_range: 0, # 0 mean no random, other positive will be used for generate extra random sleep time
       callback: MyCallbackModule # your module will handle data
@@ -38,7 +38,7 @@ defmodule LocationSimulator do
   def start(config) when is_map(config) do
     config
     |> generate_worker()
-    |> Sup.start_childrens()
+    |> Sup.start_simulator()
   end
 
   @doc """
@@ -49,7 +49,7 @@ defmodule LocationSimulator do
   def start() do
     default_config()
     |> generate_worker()
-    |> Sup.start_childrens()
+    |> Sup.start_simulator()
   end
 
   @doc """

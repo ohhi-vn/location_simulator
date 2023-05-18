@@ -1,27 +1,28 @@
 defmodule GenerateGpx do
   @moduledoc """
-  Documentation for `GenerateGpx`.
+  This is an example for use LocationSimulator.
+
+  The Example will generate a GPX file that contains GPS data.
   """
 
   alias LocationSimulator, as: LS
 
   @doc """
-  Hello world.
+  Generate a GPX file.
 
   ## Examples
 
-      iex> GenerateGpx.hello()
-      :world
+      iex> GenerateGpx.gen_gpx("fake_gps.gpx")
 
   """
-  def gen_gpx(file_path \\ "test.gpx") do
+  def gen_gpx(file_path \\ "test.gpx", event \\ 10) do
     config = %{
       # Lib config
       worker: 1,
-      event: 10,
-      interval: 300,
-      random_range: 10,
-      callback: LocationSimulator.GpxWriter,
+      event: event,
+      interval: 0,
+      random_range: 0,
+      callback: GenerateGpx.GpxWriter,
 
       # App config
       file: file_path

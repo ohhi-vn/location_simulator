@@ -36,7 +36,7 @@ by adding `location_simulator` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:location_simulator, "~> 0.1.1"}
+    {:location_simulator, "~> 0.1.2"}
   ]
 end
 ```
@@ -66,6 +66,18 @@ config =
     }
 
 LocationSimulator.start(config)
+```
+
+## Example
+
+Start library in Elixir's shell:
+
+```bash
+mix deps.get
+
+iex -S mix
+
+iex(1)> LocationSimulator.start()
 ```
 
 For writing callback module please go to `callback_event` document.

@@ -15,10 +15,13 @@ defmodule LocationSimulator.DynamicSupervisor do
     DynamicSupervisor.init(strategy: :one_for_one)
   end
 
-  def start_childrens(workers) when is_list(workers) do
+  def start_simulator(workers) when is_list(workers) do
     Logger.debug("start worker: #{inspect workers}")
     Enum.each(workers, fn spec ->
-      DynamicSupervisor.start_child(__MODULE__, spec)
+      DynamicSupervisor.start_child(
+        {:via, PartitionSupervisor, {LocationSimulator.DynamicSupervisor, self()}},
+        spec
+      )
     end)
   end
 end

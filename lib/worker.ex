@@ -51,6 +51,15 @@ defmodule LocationSimulator.Worker do
       error: 0
     }
 
+    config =
+      case Map.get(config, :direction, :random) do
+        :random ->
+          direction = Enum.random([:north, :south, :east, :west, :north_east, :north_west, :south_east, :south_west])
+          Map.put(config, :direction, direction)
+        _ ->
+          config
+      end
+
     id = Map.get(config, :id, self())
     %{callback: mod} = config
 
@@ -115,7 +124,10 @@ defmodule LocationSimulator.Worker do
 
   defp loop_event(config, %{gps: last_gps} = state, counter) do
 
-    {lati, long} = generate_next_pos(last_gps.lati, last_gps.long, Enum.random(1..5), Enum.random(1..5))
+    direction = Map.get(config, :direction, :up_right)
+
+    # generate next gps based on last gps.
+    {lati, long} = generate_next_pos(last_gps.lati, last_gps.long, random_lati_step(direction), random_long_step(direction))
 
     %{interval: interval} = config
     %{random_range: random_range} = config
@@ -158,5 +170,37 @@ defmodule LocationSimulator.Worker do
 
   defp get_timestamp do
     :os.system_time(:seconds)
+  end
+
+  # direction: :north, :south, :east, :west, :north_east, :north_west, :south_east, :south_west
+  defp random_long_step(direction) when is_atom(direction) do
+    # TO-DO: move random step distance to config
+    case direction do
+      n when n in [:north_east, :south_east] ->
+        Enum.random(1..5)
+      l when l in [:north_west, :south_west] ->
+        Enum.random(-5..-1)
+      k when k in [:north, :south] ->
+        0
+      :east ->
+        Enum.random(1..5)
+      :west ->
+        Enum.random(-5..-1)
+    end
+  end
+
+  defp random_lati_step(direction) when is_atom(direction) do
+    case direction do
+      n when n in [:north_east, :north_west] ->
+        Enum.random(1..5)
+      l when l in [:south_east, :south_west] ->
+        Enum.random(-5..-1)
+      k when k in [:east, :west] ->
+        0
+      :north ->
+        Enum.random(1..5)
+      :south ->
+        Enum.random(-5..-1)
+    end
   end
 end

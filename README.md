@@ -36,7 +36,7 @@ by adding `location_simulator` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:location_simulator, "~> 0.1.3"}
+    {:location_simulator, "~> 0.2.0"}
   ]
 end
 ```
@@ -62,11 +62,18 @@ config =
       event: 100,
       interval: 1000,
       random_range: 0,
+      direciton: :random,
       callback: MyCallbackModule
     }
 
 LocationSimulator.start(config)
 ```
+
+Simulator support directions:
+
+:north, :south, :east, :west, :north_east, :north_west, :south_east, :south_west
+
+If :direction is missed or equal :random, simulator will random a direction for each worker.
 
 ## Example
 

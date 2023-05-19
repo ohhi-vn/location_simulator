@@ -72,7 +72,7 @@ defmodule LocationSimulator do
     event =
       case config[:event] do
         nil ->
-          raise "missed counter for simu traffic"
+          raise "missed counter for location simulator"
         n when is_integer(n)->
             n
       end
@@ -106,6 +106,7 @@ defmodule LocationSimulator do
       event: event,
       interval: interval,
       random_range: random_range,
+      direction: :random,
       callback: mod
     }
   end

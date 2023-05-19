@@ -36,7 +36,7 @@ by adding `location_simulator` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:location_simulator, "~> 0.1.2"}
+    {:location_simulator, "~> 0.1.3"}
   ]
 end
 ```

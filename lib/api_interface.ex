@@ -6,6 +6,8 @@ defmodule LocationSimulator do
     iex> LocationSimulator.start()
 
   Or start with your config
+    iex> config = LocationSimulator.default_config()
+    iex> config = Map.put(config, :worker, 1)
     iex> LocationSimulator.start(config)
 
   """

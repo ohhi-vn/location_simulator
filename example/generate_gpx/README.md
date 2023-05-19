@@ -1,21 +1,28 @@
 # GenerateGpx
 
-**TODO: Add description**
+## Introduce
 
-## Installation
+This is an example for using LocationSimulator.
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `generate_gpx` to your list of dependencies in `mix.exs`:
+Generate GPX file from LocationSimulator.
 
-```elixir
-def deps do
-  [
-    {:generate_gpx, "~> 0.1.0"}
-  ]
-end
+## Guide
+
+Just go app folder and run command:
+
+```bash
+mix deps.get
+mix deps.compile
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/generate_gpx>.
+Go to Elixir shell in app:
 
+```bash
+iex -S mix
+```
+
+Make GPX file:
+
+```elixir
+GenerateGpx.gen_gpx("my_gps.gpx", 1000)
+```

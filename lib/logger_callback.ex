@@ -1,4 +1,10 @@
 defmodule LocationSimulator.LoggerEvent do
+  @moduledoc """
+  Default callback for demo & develop.
+
+  Just get data from `LocationSimulator.Worker` and print to console (by Logger).
+  """
+
   @behaviour LocationSimulator.Event
 
   require Logger

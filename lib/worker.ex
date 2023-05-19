@@ -7,6 +7,8 @@ defmodule LocationSimulator.Worker do
   Two start/stop event is used for start or init data and clean if need.
 
   event api is used for put GPS data to client.
+
+  Callbacks are declared in `LocationSimulator.Event` module.
   """
 
   require Logger
@@ -20,7 +22,7 @@ defmodule LocationSimulator.Worker do
     pid = spawn_link(__MODULE__, :init, [arg])
     {:ok, pid}
   end
-\
+
   @doc """
   Generate child spec for supervisor.
   """

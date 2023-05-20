@@ -21,7 +21,7 @@ defmodule GenerateGpx.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:location_simulator, ">= 0.2.0"}
+      {:location_simulator, "~> 0.3.0"}
     ]
   end
 end

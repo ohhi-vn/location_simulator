@@ -107,7 +107,9 @@ defmodule LocationSimulator do
       interval: interval,
       random_range: random_range,
       direction: :random,
-      callback: mod
+      callback: mod,
+      altitude: config[:altitude],
+      altitude_way: config[:altitude_way]
     }
   end
 

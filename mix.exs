@@ -4,7 +4,7 @@ defmodule LocationSimulator.MixProject do
   def project do
     [
       app: :location_simulator,
-      version: "0.2.0",
+      version: "0.3.0",
       build_path: "_build",
       config_path: "config/config.exs",
       deps_path: "deps",
@@ -46,7 +46,7 @@ defmodule LocationSimulator.MixProject do
   end
 
   defp description() do
-    "A library for generating fake gps data."
+    "A library for generating fake GPS data using for dev/test. The library can generate a GPS series for simulating a sport and support scalable for test workload."
   end
 
   defp package() do

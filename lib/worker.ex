@@ -80,10 +80,20 @@ defmodule LocationSimulator.Worker do
     # random start point.
     {lati, long} = generate_pos()
 
+    # get started altitude, default is 0
+    alti =
+      case Map.get(config, :altitude) do
+        n when is_integer(n) ->
+          n
+        _ ->
+          0
+      end
+
     gps = %{
         timestamp: 0,
         long: long,
-        lati: lati
+        lati: lati,
+        alti: alti
       }
 
     state = Map.put(state, :gps, gps)
@@ -128,6 +138,16 @@ defmodule LocationSimulator.Worker do
 
     # generate next gps based on last gps.
     {lati, long} = generate_next_pos(last_gps.lati, last_gps.long, random_lati_step(direction), random_long_step(direction))
+    # get next altitude
+    alti =
+      case Map.get(config, :altitude_way) do
+        :up ->
+          last_gps.alti + Enum.random(0..2)
+        :down ->
+          last_gps.alti - Enum.random(0..2)
+        _ ->
+          last_gps.alti
+      end
 
     %{interval: interval} = config
     %{random_range: random_range} = config
@@ -138,7 +158,7 @@ defmodule LocationSimulator.Worker do
       timestamp: sleep_time + last_gps.timestamp,
       long: long,
       lati: lati,
-      alti: 0
+      alti: alti
     }
 
     state = Map.put(state, :gps, new_gps)

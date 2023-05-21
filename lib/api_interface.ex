@@ -32,6 +32,7 @@ defmodule LocationSimulator do
     }
     ```
 
+  :id is reserved for worker's id.
 
   If you need pass your data to callback module you can add that in the config.
 
@@ -125,6 +126,6 @@ defmodule LocationSimulator do
   end
 
   defp generate_worker(counter, config, workers) do
-    generate_worker(counter-1, config, [{LocationSimulator.Worker, config} | workers])
+    generate_worker(counter-1, config, [{LocationSimulator.Worker, Map.put(config, :id, counter)} | workers])
   end
 end

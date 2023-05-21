@@ -14,14 +14,14 @@ defmodule GenerateGpx.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger, :location_simulator]
     ]
   end
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:location_simulator, "~> 0.3.0"}
+      {:location_simulator, "~> 0.3.3"}
     ]
   end
 end

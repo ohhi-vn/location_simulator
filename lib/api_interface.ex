@@ -15,6 +15,8 @@ defmodule LocationSimulator do
 
   alias LocationSimulator.DynamicSupervisor, as: Sup
 
+  @app_default_config Application.compile_env(:location_simulator, :default_config)
+
   @doc """
   Start with config.
 
@@ -60,7 +62,8 @@ defmodule LocationSimulator do
   """
   def default_config() do
     Logger.debug("generating worker from config")
-    config = Application.get_env(:location_simulator, :default_config)
+    config = @app_default_config
+
     worker =
       case config[:worker] do
         # default is one worker.
@@ -73,9 +76,9 @@ defmodule LocationSimulator do
     event =
       case config[:event] do
         nil ->
-          raise "missed counter for location simulator"
+          1
         n when is_integer(n)->
-            n
+          n
       end
 
     interval =
@@ -94,10 +97,26 @@ defmodule LocationSimulator do
             n
       end
 
+    altitude =
+      case config[:altitude] do
+        nil ->
+          0
+        n when is_integer(n)->
+            n
+      end
+
+    altitude_way =
+      case config[:altitude_way] do
+        nil ->
+          :no_up_down
+        direction ->
+            direction
+      end
+
     mod =
       case config[:callback] do
         nil ->
-          raise "missed callback module"
+          LocationSimulator.LoggerEvent
         m ->
             m
       end
@@ -109,8 +128,8 @@ defmodule LocationSimulator do
       random_range: random_range,
       direction: :random,
       callback: mod,
-      altitude: config[:altitude],
-      altitude_way: config[:altitude_way]
+      altitude: altitude,
+      altitude_way: altitude_way
     }
   end
 

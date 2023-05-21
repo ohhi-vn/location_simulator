@@ -40,7 +40,18 @@ by adding `location_simulator` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:location_simulator, "~> 0.3.0"}
+    {:location_simulator, "~> 0.3.3"}
+  ]
+end
+```
+
+Library need to start before using APIs. If you need start with your app, you could add to `application` function:
+
+```elixir
+def application do
+  [
+    mod: {YourApp.Application, []},
+    extra_applications: [:logger, :location_simulator]
   ]
 end
 ```

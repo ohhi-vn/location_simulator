@@ -77,6 +77,10 @@ defmodule LocationSimulatorTest do
     :ok
   end
 
+  test "default config" do
+    config = LocationSimulator.default_config()
+    assert is_map(config)
+  end
 
   test "catch start event" do
     config = %{

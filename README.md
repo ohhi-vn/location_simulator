@@ -94,7 +94,7 @@ If :direction is missed or equal :random, simulator will random a direction for 
 
 With altitude, you can set start level and way :up or :down or no move up/down by any value.
 
-If you want all worker started from same point, you can add :started_gps. In this case altitube config from outside will be ignored.
+If you want all worker started from same point, you can add :started_gps. In this case altitude config from outside will be ignored.
 
 ```elixir
 

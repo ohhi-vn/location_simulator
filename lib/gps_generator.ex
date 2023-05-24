@@ -4,11 +4,14 @@ defmodule LocationSimulator.Gps do
   """
 
   require Logger
-  require Math
+
+  alias :math, as: Math
+
 
   @doc """
   Generates a random location.
   """
+  @spec generate_pos :: {float, float}
   def generate_pos() do
     Random.seed(System.monotonic_time(:nanosecond))
     {Random.uniform(-90,90), Random.uniform(-180, 180)}
@@ -17,12 +20,14 @@ defmodule LocationSimulator.Gps do
   @doc """
   Gets next location from current location.
   """
+  @spec generate_next_pos(float, float, integer, integer) :: {float, float}
   def generate_next_pos(lati, long, step_lati \\1, step_long \\ 1) when is_number(long) and is_number(lati) do
     new_lati = lati + (step_lati * meter_in_degree())
     new_long = long + (step_long * meter_in_degree()) / Math.cos(lati * (Math.pi()/180))
     {new_lati,  new_long}
   end
 
+  @spec meter_in_degree() :: float
   defp meter_in_degree() do
     # Radius of the earth (km)
     earth_radius = 6378.137

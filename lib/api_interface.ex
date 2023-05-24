@@ -17,6 +17,7 @@ defmodule LocationSimulator do
 
   @app_default_config Application.compile_env(:location_simulator, :default_config)
 
+
   @doc """
   Start with config.
 
@@ -40,6 +41,7 @@ defmodule LocationSimulator do
 
   The config can be change after every event.
   """
+  @spec start(%{:worker => non_neg_integer, optional(any) => any}) :: :ok
   def start(config) when is_map(config) do
     config
     |> generate_worker()
@@ -51,6 +53,7 @@ defmodule LocationSimulator do
 
   In this case, library just uses Logger to log data in every event.
   """
+  @spec start() :: :ok
   def start() do
     default_config()
     |> generate_worker()
@@ -60,6 +63,7 @@ defmodule LocationSimulator do
   @doc """
   Get default config of library.
   """
+  @spec default_config() :: map
   def default_config() do
     Logger.debug("generating worker from config")
     config = @app_default_config
@@ -135,11 +139,13 @@ defmodule LocationSimulator do
 
   ## private functions ##
 
+  @spec generate_worker(map) :: list
   defp generate_worker(config) do
     %{worker: worker} = config
     generate_worker(worker, config, [])
   end
 
+  @spec generate_worker(non_neg_integer(), map, list) :: list
   defp generate_worker(0, _config, workers) do
     workers
   end

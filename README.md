@@ -1,6 +1,6 @@
 # LocationSimulator
 
-Use for simulating GPS location (longitude, latitude, altitude) data. Support scalable for test workload.
+Use for simulating location/GPS (longitude, latitude, altitude) data. Support scalable for test workload.
 
 Source code is available on [Github](https://github.com/ohhi-vn/location_simulator)
 
@@ -18,19 +18,19 @@ The library has 3 main part:
 
 ```mermaid
 sequenceDiagram
-    participant CallbackMod
+    participant CallbackModule
     participant Worker
     participant Api
     participant Supervisor
 
     Api->>Supervisor: Start with workers from config
     Supervisor->>Worker: Start GPS generator
-    Worker->>CallbackMod: call start event
-    Worker->>CallbackMod: call gps event
-    Worker->>CallbackMod: call stop event
+    Worker->>CallbackModule: call start event
+    Worker->>CallbackModule: call gps event
+    Worker->>CallbackModule: call stop event
 ```
 
-*(for in local you need install extension to view flow)*
+*(for in local you need install extension support for mermaid to view flow)*
 
 ## Installation
 
@@ -40,7 +40,7 @@ by adding `location_simulator` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:location_simulator, "~> 0.3.3"}
+    {:location_simulator, "~> 0.3.4"}
   ]
 end
 ```
@@ -56,7 +56,7 @@ def application do
 end
 ```
 
-If you need to modify source please go to [Github](https://github.com/ohhi-vn/location_simulator) and clone repo.
+If you need to modify source please go to [Github](https://github.com/ohhi-vn/location_simulator) and clone repo or contribute our repo.
 
 ## Guide
 
@@ -66,7 +66,7 @@ Start LocationSimulator with default config:
 LocationSimulator.start()
 ```
 
-With default config simulator will print to Logger with default config
+With default config simulator will print location to console by Logger.
 
 Start with your callback & config:
 
@@ -92,6 +92,20 @@ Simulator support directions:
 
 If :direction is missed or equal :random, simulator will random a direction for each worker.
 
+With altitude, you can set start level and way :up or :down or no move up/down by any value.
+
+If you want all worker started from same point, you can add :started_gps. In this case altitube config from outside will be ignored.
+
+```elixir
+
+config =
+  %{
+    ...
+    started_gps: {20.95991288388162, 107.06662537952286, 0}
+  }
+
+```
+
 ## Example
 
 Start library in Elixir's shell:
@@ -106,4 +120,4 @@ iex(1)> LocationSimulator.start()
 
 For writing callback module please go to `LocationSimulator.Event` document.
 
-[Code demo generate GPX file from library](https://github.com/ohhi-vn/location_simulator/tree/main/example/generate_gpx)
+We provide simple demo that generate a GPX file. You can get from [repo](https://github.com/ohhi-vn/location_simulator/tree/main/example/generate_gpx)

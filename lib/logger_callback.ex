@@ -10,6 +10,7 @@ defmodule LocationSimulator.LoggerEvent do
   require Logger
 
   @impl true
+  @spec start(map, %{:start_time => any, optional(any) => any}) :: {:ok, map}
   def start(config, state) do
     id = Map.get(config, :id, self())
     %{start_time: start_time} = state
@@ -19,6 +20,7 @@ defmodule LocationSimulator.LoggerEvent do
   end
 
   @impl true
+  @spec event(map, map) :: {:ok, map}
   def event(config, %{gps: gps} = _state) do
     id = Map.get(config, :id, self())
     Logger.info("#{inspect id}, new GPS: #{inspect gps}")

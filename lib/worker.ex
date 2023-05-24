@@ -15,17 +15,27 @@ defmodule LocationSimulator.Worker do
 
   import LocationSimulator.Gps
 
+
   @doc """
   Support for starting from supervisor.
   """
+  @spec start_link(any) :: {:ok, pid}
   def start_link(arg) do
     pid = spawn_link(__MODULE__, :init, [arg])
     {:ok, pid}
   end
 
+
   @doc """
   Generate child spec for supervisor.
   """
+  @spec child_spec(map) :: %{
+    id: any,
+    restart: any,
+    shutdown: any,
+    start: {LocationSimulator.Worker, :start_link, [map, ...]},
+    type: :worker
+  }
   def child_spec(opts) when is_map(opts) do
     %{
       id: Map.get(opts, :id, __MODULE__),
@@ -36,6 +46,7 @@ defmodule LocationSimulator.Worker do
     }
   end
 
+
   @doc """
   Entry point of worker, start event will be fired from here.
 
@@ -43,6 +54,7 @@ defmodule LocationSimulator.Worker do
 
   Root GPS data will be generated in this function.
   """
+  @spec init(map) :: :ok
   def init(config) when is_map(config) do
     state = %{
       start_time: get_timestamp(),
@@ -77,24 +89,35 @@ defmodule LocationSimulator.Worker do
 
     :rand.seed(:exsss)
 
-    # random start point.
-    {lati, long} = generate_pos()
+    gps =
+      if Map.has_key?(config, :started_gps) do
+        {lati, long, alti} = Map.get(config, :started_gps)
+        %{
+          timestamp: 0,
+          long: long,
+          lati: lati,
+          alti: alti
+        }
+      else
+        # random start point.
+        {lati, long} = generate_pos()
 
-    # get started altitude, default is 0
-    alti =
-      case Map.get(config, :altitude) do
-        n when is_integer(n) ->
-          n
-        _ ->
-          0
+        # get started altitude, default is 0
+        alti =
+          case Map.get(config, :altitude) do
+            n when is_integer(n) ->
+              n
+            _ ->
+              0
+          end
+
+        %{
+          timestamp: 0,
+          long: long,
+          lati: lati,
+          alti: alti
+        }
       end
-
-    gps = %{
-        timestamp: 0,
-        long: long,
-        lati: lati,
-        alti: alti
-      }
 
     state = Map.put(state, :gps, gps)
 

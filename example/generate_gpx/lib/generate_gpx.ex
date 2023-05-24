@@ -15,7 +15,7 @@ defmodule GenerateGpx do
       iex> GenerateGpx.gen_gpx("fake_gps.gpx")
 
   """
-  def gen_gpx(file_path \\ "test.gpx", event \\ 10, direction \\ :random) do
+  def gen_gpx(file_path \\ "test.gpx", event \\ 1000, direction \\ :random) do
     config = %{
       # Lib config
       worker: 1,
@@ -23,6 +23,7 @@ defmodule GenerateGpx do
       interval: 0,
       random_range: 0,
       direction: direction,
+      started_gps: {20.95991288388162, 107.06662537952286, 0},
       callback: GenerateGpx.GpxWriter,
 
       # App config

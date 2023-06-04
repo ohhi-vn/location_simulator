@@ -1,3 +1,6 @@
+[![Docs](https://img.shields.io/badge/api-docs-green.svg?style=flat)](https://hexdocs.pm/location_simulator)
+[![Hex.pm](https://img.shields.io/hexpm/v/location_simulator.svg?style=flat&color=blue)](https://hex.pm/packages/location_simulator)
+
 # LocationSimulator
 
 Use for simulating location/GPS (longitude, latitude, altitude) data. Support scalable for test workload.

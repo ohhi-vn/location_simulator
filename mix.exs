@@ -1,12 +1,12 @@
-Code.compiler_options(on_undefined_variable: :warn)
-
 defmodule LocationSimulator.MixProject do
+  Code.compiler_options(on_undefined_variable: :warn)
+
   use Mix.Project
 
   def project do
     [
       app: :location_simulator,
-      version: "0.3.5",
+      version: "0.3.6",
       build_path: "_build",
       config_path: "config/config.exs",
       deps_path: "deps",

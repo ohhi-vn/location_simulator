@@ -43,7 +43,7 @@ by adding `location_simulator` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:location_simulator, "~> 0.3.4"}
+    {:location_simulator, "~> 0.4"}
   ]
 end
 ```
@@ -73,6 +73,8 @@ With default config simulator will print location to console by Logger.
 
 Start with your callback & config:
 
+### Generate fake GPS data
+
 ```elixir
 config =
     %{
@@ -80,7 +82,7 @@ config =
       event: 100,
       interval: 1000,
       random_range: 0,
-      direciton: :random,
+      direction: :random,
       altitude: 100,
       altitude_way: :up,
       callback: MyCallbackModule
@@ -100,7 +102,6 @@ With altitude, you can set start level and way :up or :down or no move up/down b
 If you want all worker started from same point, you can add :started_gps. In this case altitude config from outside will be ignored.
 
 ```elixir
-
 config =
   %{
     ...
@@ -108,6 +109,24 @@ config =
   }
 
 ```
+
+### Load GPS from GPX file
+
+For load GPS data just add a file path with supported wildcard by config `gpx_file`. Some configs are related to GPS can be ignored.
+
+```elixir
+config =
+    %{
+      worker: 3,
+      interval: 1000,
+      gpx_file: "data/*.gpx"
+      callback: MyCallbackModule
+    }
+
+LocationSimulator.start(config)
+```
+
+If you have multi GPX file matched with `gpx_file` worker will get file depended matched order and rotate if number of files is not enough for workers.
 
 ## Example
 

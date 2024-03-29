@@ -2,7 +2,7 @@ defmodule LocationSimulator.DynamicSupervisor do
   @moduledoc """
   DynamicSupervisor, uses for add worker in runtime.
 
-  Module uses PartitionSupervisor for starting workers faster.
+  Module uses PartitionSupervisor to improve performance when start workers.
   """
 
   use DynamicSupervisor

@@ -11,6 +11,7 @@ defmodule LocationSimulator do
     iex> LocationSimulator.start(config)
 
   """
+
   require Logger
 
   alias LocationSimulator.DynamicSupervisor, as: Sup
@@ -140,6 +141,18 @@ defmodule LocationSimulator do
   ## private functions ##
 
   @spec generate_worker(map) :: list
+  # generate worker from config with gpx file.
+  defp generate_worker(%{gpx_file: wildcard_path} = config) do
+    list_files = wildcard_path |> Path.wildcard()
+
+    if length(list_files) == 0 do
+      raise "No GPX file found from path: #{wildcard_path}"
+    end
+
+    %{worker: worker} = config
+    generate_worker_gpx(worker, config, list_files, list_files, [])
+  end
+  # generate worker from config with fake data.
   defp generate_worker(config) do
     %{worker: worker} = config
     generate_worker(worker, config, [])
@@ -152,5 +165,22 @@ defmodule LocationSimulator do
 
   defp generate_worker(counter, config, workers) do
     generate_worker(counter-1, config, [{LocationSimulator.Worker, Map.put(config, :id, counter)} | workers])
+  end
+
+  @spec generate_worker_gpx(non_neg_integer(), map, list, list, list) :: list
+  defp generate_worker_gpx(0, _config, _current_files, _files, workers) do
+    workers
+  end
+
+  defp generate_worker_gpx(counter, config, [], files, workers) do
+    generate_worker_gpx(counter, config, files, files, workers)
+  end
+  defp generate_worker_gpx(counter, config, [file|rest_files], files, workers) do
+    config =
+      config
+      |> Map.put(:id, counter)
+      |> Map.put(:gpx_file, file)
+
+    generate_worker_gpx(counter-1, config, rest_files, files, [{LocationSimulator.WorkerGpx, config} | workers])
   end
 end

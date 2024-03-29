@@ -6,7 +6,7 @@ defmodule LocationSimulator.Worker do
 
   Two start/stop event is used for start or init data and clean if need.
 
-  event api is used for put GPS data to client.
+  `event` api is used for put GPS data to client.
 
   Callbacks are declared in `LocationSimulator.Event` module.
   """
@@ -127,11 +127,9 @@ defmodule LocationSimulator.Worker do
     loop_event(config, state, counter)
   end
 
-  @doc """
-  Main function of worker, GPS data will be generated in here then trigger client's api.
 
-  After fired all GPS data/ client send signal to stop, the function will fire stop event.
-  """
+  # Main function of worker, GPS data will be generated in here then trigger client's api.
+  # After fired all GPS data/ client send signal to stop, the function will fire stop event.
   defp loop_event(config, state, 0) do
     stop_time = get_timestamp()
     state = Map.put(state, :stop_time, stop_time)

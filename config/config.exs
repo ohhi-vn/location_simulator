@@ -2,7 +2,7 @@ import Config
 
 # Default config for demo.
 config :location_simulator, :default_config,
-  event: 10,
+  event: 100,
   worker: 3,
   interval: 100,
   random_range: 10,

@@ -6,7 +6,7 @@ defmodule LocationSimulator.MixProject do
   def project do
     [
       app: :location_simulator,
-      version: "0.3.5",
+      version: "0.4.0",
       build_path: "_build",
       config_path: "config/config.exs",
       deps_path: "deps",
@@ -39,20 +39,22 @@ defmodule LocationSimulator.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:random, "~> 0.2.4"},
+      {:random, "~> 0.2"},
+      {:sweet_xml, "~> 0.7"},
+
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
 
   defp description() do
-    "A library for generating fake GPS data using for dev/test. The library can generate a GPS series for simulating a sport game and support scalable for test workload."
+    "A library for generating fake GPS data or load from GPX file/string using for dev/test. The library can generate a GPS series for simulating a sport game and support scalable for test workload."
   end
 
   defp package() do
     [
-      maintainers: ["Manh Van Vu"],
+      maintainers: ["Manh Vu"],
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/ohhi-vn/location_simulator", "About us" => "https://ohhi.vn/team"}
+      links: %{"GitHub" => "https://github.com/ohhi-vn/location_simulator", "About us" => "https://ohhi.vn"}
     ]
   end
 end

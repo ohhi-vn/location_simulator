@@ -91,20 +91,20 @@ defmodule LocationSimulator.Worker do
 
     gps =
       if Map.has_key?(config, :started_gps) do
-        {lati, long, alti} = Map.get(config, :started_gps)
+        {lati, long, elev} = Map.get(config, :started_gps)
         %{
           timestamp: 0,
           long: long,
           lati: lati,
-          alti: alti
+          elev: elev
         }
       else
         # random start point.
         {lati, long} = generate_pos()
 
-        # get started altitude, default is 0
-        alti =
-          case Map.get(config, :altitude) do
+        # get started elevation, default is 0
+        elev =
+          case Map.get(config, :elevation) do
             n when is_integer(n) ->
               n
             _ ->
@@ -115,7 +115,7 @@ defmodule LocationSimulator.Worker do
           timestamp: 0,
           long: long,
           lati: lati,
-          alti: alti
+          elev: elev
         }
       end
 
@@ -159,15 +159,15 @@ defmodule LocationSimulator.Worker do
 
     # generate next gps based on last gps.
     {lati, long} = generate_next_pos(last_gps.lati, last_gps.long, random_lati_step(direction), random_long_step(direction))
-    # get next altitude
-    alti =
-      case Map.get(config, :altitude_way) do
+    # get next elevation
+    elev =
+      case Map.get(config, :elevation_way) do
         :up ->
-          last_gps.alti + Enum.random(0..2)
+          last_gps.elev + Enum.random(0..2)
         :down ->
-          last_gps.alti - Enum.random(0..2)
+          last_gps.elev - Enum.random(0..2)
         _ ->
-          last_gps.alti
+          last_gps.elev
       end
 
     %{interval: interval} = config
@@ -179,7 +179,7 @@ defmodule LocationSimulator.Worker do
       timestamp: sleep_time + last_gps.timestamp,
       long: long,
       lati: lati,
-      alti: alti
+      elev: elev
     }
 
     state = Map.put(state, :gps, new_gps)

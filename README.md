@@ -3,7 +3,7 @@
 
 # LocationSimulator
 
-Use for simulating location/GPS (longitude, latitude, altitude) data. Support scalable for test workload.
+Use for simulating location/GPS (longitude, latitude, elevation) data. Support scalable for test workload.
 
 Source code is available on [Github](https://github.com/ohhi-vn/location_simulator)
 
@@ -83,8 +83,8 @@ config =
       interval: 1000,
       random_range: 0,
       direction: :random,
-      altitude: 100,
-      altitude_way: :up,
+      elevation: 100,
+      elevation_way: :up,
       callback: MyCallbackModule
     }
 
@@ -97,9 +97,9 @@ Simulator support directions:
 
 If :direction is missed or equal :random, simulator will random a direction for each worker.
 
-With altitude, you can set start level and way :up or :down or no move up/down by any value.
+With elevation, you can set start level and way :up or :down or no move up/down by any value.
 
-If you want all worker started from same point, you can add :started_gps. In this case altitude config from outside will be ignored.
+If you want all worker started from same point, you can add :started_gps. In this case elevation config from outside will be ignored.
 
 ```elixir
 config =

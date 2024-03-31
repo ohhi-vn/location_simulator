@@ -30,7 +30,7 @@ defmodule LocationSimulator.Event do
 
   :lati - Latitude
 
-  :alti - Altitude (meter)
+  :elev - elevation (meter)
 
   ## Example
 

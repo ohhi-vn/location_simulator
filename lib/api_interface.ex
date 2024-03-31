@@ -102,16 +102,16 @@ defmodule LocationSimulator do
             n
       end
 
-    altitude =
-      case config[:altitude] do
+    elevation =
+      case config[:elevation] do
         nil ->
           0
         n when is_integer(n)->
             n
       end
 
-    altitude_way =
-      case config[:altitude_way] do
+    elevation_way =
+      case config[:elevation_way] do
         nil ->
           :no_up_down
         direction ->
@@ -133,8 +133,8 @@ defmodule LocationSimulator do
       random_range: random_range,
       direction: :random,
       callback: mod,
-      altitude: altitude,
-      altitude_way: altitude_way
+      elevation: elevation,
+      elevation_way: elevation_way
     }
   end
 

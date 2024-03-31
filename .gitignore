@@ -26,3 +26,5 @@ simu_traffic-*.tar
 /tmp/
 
 mix.lock
+
+.DS_Store

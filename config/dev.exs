@@ -11,6 +11,6 @@ config :location_simulator, :default_config,
   worker: 1,
   interval: 10,
   random_range: 10,
-  altitude: 50,
-  altitude_way: :up,
+  elevation: 50,
+  elevation_way: :up,
   callback:  LocationSimulator.LoggerEvent

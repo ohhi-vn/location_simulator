@@ -30,7 +30,7 @@ defmodule GenerateGpx.GpxWriter do
   @impl true
   def event(%{file: file} = config, %{gps: gps} = _state) do
     time = DateTime.utc_now()
-    str = ~s(<trkpt lat="#{gps.lati}" lon="#{gps.long}"><ele>#{gps.elev}</ele><time>#{DateTime.to_string(time)}</time></trkpt>\n)
+    str = ~s(<trkpt lat="#{gps.lati}" lon="#{gps.long}"><ele>#{gps.elev}</ele><time>#{DateTime.to_iso8601(time)}</time></trkpt>\n)
 
     case File.write(file, str, [:append]) do
       :ok ->

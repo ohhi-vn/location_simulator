@@ -87,9 +87,9 @@ defmodule LocationSimulator.WorkerGpx do
 
     new_gps = %{
       timestamp: 0,
-      long: gps.long,
-      lati: gps.lati,
-      elev: gps.elev
+      lon: gps.lon,
+      lat: gps.lat,
+      ele: gps.ele
     }
 
     state = Map.put(state, :gps, new_gps)
@@ -132,9 +132,9 @@ defmodule LocationSimulator.WorkerGpx do
 
     new_gps = %{
       timestamp: config.interval + last_gps.timestamp,
-      long: gps.long,
-      lati: gps.lati,
-      elev: gps.elev
+      lon: gps.lon,
+      lat: gps.lat,
+      ele: gps.ele
     }
 
     state = Map.put(state, :gps, new_gps)

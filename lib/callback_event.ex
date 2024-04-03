@@ -26,11 +26,11 @@ defmodule LocationSimulator.Event do
 
   :timestamp - delta time in milisecond from start event (stored in state with key :start_time).
 
-  :long - Longitude
+  :lon - Longitude
 
-  :lati - Latitude
+  :lat - Latitude
 
-  :elev - elevation (meter)
+  :ele - elevation (meter)
 
   ## Example
 

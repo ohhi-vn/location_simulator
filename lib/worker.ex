@@ -91,19 +91,19 @@ defmodule LocationSimulator.Worker do
 
     gps =
       if Map.has_key?(config, :started_gps) do
-        {lati, long, elev} = Map.get(config, :started_gps)
+        {lat, lon, ele} = Map.get(config, :started_gps)
         %{
           timestamp: 0,
-          long: long,
-          lati: lati,
-          elev: elev
+          lon: lon,
+          lat: lat,
+          ele: ele
         }
       else
         # random start point.
-        {lati, long} = generate_pos()
+        {lat, lon} = generate_pos()
 
         # get started elevation, default is 0
-        elev =
+        ele =
           case Map.get(config, :elevation) do
             n when is_integer(n) ->
               n
@@ -113,9 +113,9 @@ defmodule LocationSimulator.Worker do
 
         %{
           timestamp: 0,
-          long: long,
-          lati: lati,
-          elev: elev
+          lon: lon,
+          lat: lat,
+          ele: ele
         }
       end
 
@@ -158,16 +158,16 @@ defmodule LocationSimulator.Worker do
     direction = Map.get(config, :direction, :up_right)
 
     # generate next gps based on last gps.
-    {lati, long} = generate_next_pos(last_gps.lati, last_gps.long, random_lati_step(direction), random_long_step(direction))
+    {lat, lon} = generate_next_pos(last_gps.lat, last_gps.lon, random_lati_step(direction), random_long_step(direction))
     # get next elevation
-    elev =
+    ele =
       case Map.get(config, :elevation_way) do
         :up ->
-          last_gps.elev + Enum.random(0..2)
+          last_gps.ele + Enum.random(0..2)
         :down ->
-          last_gps.elev - Enum.random(0..2)
+          last_gps.ele - Enum.random(0..2)
         _ ->
-          last_gps.elev
+          last_gps.ele
       end
 
     %{interval: interval} = config
@@ -177,9 +177,9 @@ defmodule LocationSimulator.Worker do
 
     new_gps = %{
       timestamp: sleep_time + last_gps.timestamp,
-      long: long,
-      lati: lati,
-      elev: elev
+      lon: lon,
+      lat: lat,
+      ele: ele
     }
 
     state = Map.put(state, :gps, new_gps)

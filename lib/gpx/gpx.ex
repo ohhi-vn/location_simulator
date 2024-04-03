@@ -34,9 +34,9 @@ defmodule LocationSimulator.Gpx do
 
   defp parse_gpx_point(xml_el) do
     %LocationSimulator.Gpx.GpsPoint{
-      lati: xml_el |> xpath(~x"./@lat"f) ,
-      long: xml_el |> xpath(~x"./@lon"f),
-      elev: xml_el |> xpath(~x"./ele/text()"f),
+      lat: xml_el |> xpath(~x"./@lat"f) ,
+      lon: xml_el |> xpath(~x"./@lon"f),
+      ele: xml_el |> xpath(~x"./ele/text()"f),
       time: xml_el |> xpath(~x"./time/text()"s) |> parse_datetime()
     }
   end

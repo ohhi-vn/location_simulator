@@ -5,21 +5,21 @@ defmodule LocationSimulator.Gpx.GpsPoint do
 
   @typedoc """
   Holds GPS point data from GPX file.
-  `:lati` is latitude.
-  `:long` is longitude.
-  `:elev` is elevation.
+  `:lat` is latitude.
+  `:lon` is longitude.
+  `:ele` is elevation.
   `:time` is time of GPS point.
   """
   @type t :: %__MODULE__{
-          lati: float,
-          long: float,
-          elev: float,
-          time: NaiveDateTime.t | nil
+          lat: float,
+          lon: float,
+          ele: float,
+          time: DateTime.t | nil
         }
   defstruct [
-    :lati,
-    :long,
-    :elev,
+    :lat,
+    :lon,
+    :ele,
     :time
   ]
 end

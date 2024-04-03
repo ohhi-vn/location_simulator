@@ -3,6 +3,8 @@
 
 # LocationSimulator
 
+*Important: We updated attribute for compatible with GPX. If you go to from older version, you need change attribue in state follow: :lati -> :lat, :long -> :lon, :elev -> :ele . Sorry for the inconvenience!*
+
 Use for simulating location/GPS (longitude, latitude, elevation) data. Support scalable for test workload.
 
 Source code is available on [Github](https://github.com/ohhi-vn/location_simulator)
@@ -43,7 +45,7 @@ by adding `location_simulator` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:location_simulator, "~> 0.4"}
+    {:location_simulator, "~> 0.6"}
   ]
 end
 ```

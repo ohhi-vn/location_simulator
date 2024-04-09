@@ -92,6 +92,8 @@ defmodule LocationSimulator do
           100
         n when is_integer(n)->
             n
+        :gpx_time ->
+          :gpx_time
       end
 
     random_range =

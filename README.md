@@ -120,13 +120,15 @@ For load GPS data just add a file path with supported wildcard by config `gpx_fi
 config =
     %{
       worker: 3,
-      interval: 1000,
+      interval: :gpx_time,
       gpx_file: "data/*.gpx"
       callback: MyCallbackModule
     }
 
 LocationSimulator.start(config)
 ```
+
+interval can match with gpx file by set interval to `:gpx_time` or set interval by an integer.
 
 If you have multi GPX file matched with `gpx_file` worker will get file depended matched order and rotate if number of files is not enough for workers.
 

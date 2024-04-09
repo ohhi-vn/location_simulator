@@ -87,6 +87,7 @@ defmodule LocationSimulator.WorkerGpx do
 
     new_gps = %{
       timestamp: 0,
+      time: gps.time,
       lon: gps.lon,
       lat: gps.lat,
       ele: gps.ele
@@ -121,6 +122,50 @@ defmodule LocationSimulator.WorkerGpx do
 
     id = Map.get(config, :id, self())
     Logger.debug "Worker(#{inspect id}) DONE!, time: #{stop_time - start_time}s, success: #{s}, failed: #{f}, error: #{e}"
+  end
+
+  # in case of gpx_time, we will use timestamp from gpx file.
+  defp loop_event(%{interval: :gpx_time} = config, %{gps: last_gps} = state) do
+    # get next gps data
+    [gps | gps_data] = config.gps_data
+    config = Map.put(config, :gps_data, gps_data)
+
+    # sleep time between two gps data
+    # TO-DO: Move sleep to send event for can cancel sleep.
+    interval = NaiveDateTime.diff(gps.time, last_gps.time, :second) * 1_000
+    Process.sleep(interval)
+
+    new_gps = %{
+      timestamp: interval + last_gps.timestamp,
+      time: gps.time,
+      lon: gps.lon,
+      lat: gps.lat,
+      ele: gps.ele
+    }
+
+    state = Map.put(state, :gps, new_gps)
+    %{callback: mod} = config
+
+    {config, state, is_stop} =
+      case mod.event(config, state) do
+        {:ok, config} ->
+          {config, Map.update!(state, :success, &(&1 + 1)), :continue}
+        {:error, reason} ->
+          Logger.debug "failed to post data return code: #{inspect reason}"
+          {config, Map.update!(state, :failed, &(&1 + 1)), :continue}
+        {:stop, reason} ->
+          Logger.debug "stop worker by client, reason: #{inspect reason}"
+          {config, state, :stop}
+      end
+
+    case is_stop do
+        :stop ->
+          id = Map.get(config, :id, self())
+          Logger.debug("#{inspect id} stop by callback, id: #{inspect id}")
+          loop_event(config, state)
+        _ ->
+          loop_event(config, state)
+      end
   end
 
   defp loop_event(config, %{gps: last_gps} = state) do

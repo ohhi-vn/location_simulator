@@ -33,10 +33,18 @@ defmodule LocationSimulator.Gpx do
   end
 
   defp parse_gpx_point(xml_el) do
+    # ele should be 0 in case xml file has no 'ele' tag
+    ele =
+      try do
+        xml_el |> xpath(~x"./ele/text()"f)
+      catch
+        :error, {:badmatch, _} -> 0
+      end
+
     %LocationSimulator.Gpx.GpsPoint{
       lat: xml_el |> xpath(~x"./@lat"f) ,
       lon: xml_el |> xpath(~x"./@lon"f),
-      ele: xml_el |> xpath(~x"./ele/text()"f),
+      ele: ele
       time: xml_el |> xpath(~x"./time/text()"s) |> parse_datetime()
     }
   end

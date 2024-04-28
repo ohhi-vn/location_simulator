@@ -193,7 +193,7 @@ defmodule LocationSimulator.Worker do
           Logger.debug "failed to post data return code: #{inspect reason}"
           {config, Map.update!(state, :failed, &(&1 + 1)), counter}
         {:stop, reason} ->
-          Logger.debug "stop worker by client, reason: #{inspect reason}"
+          Logger.debug " by client, reason: #{inspect reason}"
           {config, state, :stop}
       end
 

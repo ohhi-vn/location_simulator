@@ -162,7 +162,8 @@ defmodule LocationSimulator.WorkerGpx do
         :stop ->
           id = Map.get(config, :id, self())
           Logger.debug("#{inspect id} stop by callback, id: #{inspect id}")
-          loop_event(config, state)
+
+          loop_event(Map.put(config, :gps_data, []), state)
         _ ->
           loop_event(config, state)
       end
@@ -201,7 +202,7 @@ defmodule LocationSimulator.WorkerGpx do
         :stop ->
           id = Map.get(config, :id, self())
           Logger.debug("#{inspect id} stop by callback, id: #{inspect id}")
-          loop_event(config, state)
+          loop_event(Map.put(config, :gps_data, []), state)
         _ ->
           loop_event(config, state)
       end

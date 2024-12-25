@@ -31,8 +31,14 @@ defmodule LocationSimulator.DynamicSupervisor do
   def start_simulator(workers) when is_list(workers) do
     Logger.debug("start worker: #{inspect workers}")
     Enum.each(workers, fn spec ->
+      {_, options} = spec
+      key =
+        case Map.get(options, :id) do
+          nil -> self()
+          id -> id
+        end
       DynamicSupervisor.start_child(
-        {:via, PartitionSupervisor, {LocationSimulator.DynamicSupervisor, self()}},
+        {:via, PartitionSupervisor, {LocationSimulator.DynamicSupervisor, key}},
         spec
       )
     end)

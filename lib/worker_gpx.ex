@@ -61,9 +61,6 @@ defmodule LocationSimulator.WorkerGpx do
       error: 0
     }
 
-    # load GPS data from GPX file
-    gps_data = Gpx.read_gpx(config.gpx_file)
-
     id = Map.get(config, :id, self())
     %{callback: mod} = config
 
@@ -79,7 +76,10 @@ defmodule LocationSimulator.WorkerGpx do
         raise err
     end
 
-    :rand.seed(:exsss)
+    # load GPS data from GPX file
+    gps_data = Gpx.read_gpx(config.gpx_file)
+    Logger.info("#{inspect id} load gps data from file: #{inspect config.gpx_file}, length: #{length(gps_data)}")
+
 
     # get first gps data
     [gps | gps_data] = gps_data

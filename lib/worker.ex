@@ -119,6 +119,10 @@ defmodule LocationSimulator.Worker do
         }
       end
 
+    if Map.has_key?(config, :group_id) do
+      Registry.register(LocationSimulator.Registry, config.group_id, config.id)
+    end
+
     state = Map.put(state, :gps, gps)
 
     counter = Map.get(config, :event, :infinity)
@@ -153,7 +157,7 @@ defmodule LocationSimulator.Worker do
     Logger.debug "Worker(#{inspect id}) DONE!, time: #{stop_time - start_time}s, success: #{s}, failed: #{f}, error: #{e}"
   end
 
-  defp loop_event(config, %{gps: last_gps} = state, counter) do
+  defp loop_event(%{id: id} = config, %{gps: last_gps} = state, counter) do
 
     direction = Map.get(config, :direction, :up_right)
 
@@ -201,11 +205,16 @@ defmodule LocationSimulator.Worker do
         :infinity ->
           loop_event(config, state, counter)
         :stop ->
-          id = Map.get(config, :id, self())
-          Logger.debug("#{inspect id} stop by callback, reason: #{inspect id}")
+          Logger.debug("#{inspect id}, stop by callback.")
           loop_event(config, state, 0)
         _ ->
-          loop_event(config, state, counter-1)
+          receive do
+            {:stop_worker, ^id} ->
+              Logger.debug("#{inspect id}, stop by client.")
+              loop_event(config, state, 0)
+            after 0 ->
+              loop_event(config, state, counter-1)
+          end
       end
   end
 

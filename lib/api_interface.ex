@@ -28,6 +28,7 @@ defmodule LocationSimulator do
 
     ```
     %{
+      group_id: "group_id", # group id for workers, default is nil, using for stop all workers in a group.
       worker: 3,  # number of worker will run
       event: 100, # number of GPS events will be trigger for a worker
       interval: 1000, # this & random_range used for sleep between GPS events, if value is :infinity worker will run forever (you still stop by return {:stop, reason})
@@ -37,6 +38,7 @@ defmodule LocationSimulator do
     ```
 
   :id is reserved for worker's id.
+  :group_id if added will be used for stop all workers in a group.
 
   If you need pass your data to callback module you can add that in the config.
 
@@ -53,12 +55,29 @@ defmodule LocationSimulator do
   Start with default config.
 
   In this case, library just uses Logger to log data in every event.
+  Remember start with default has no id then we can't stop worker by id.
   """
   @spec start() :: :ok
   def start() do
     default_config()
     |> generate_worker()
     |> Sup.start_simulator()
+  end
+
+  @doc """
+  Stop all workers.
+
+  For using this function, you need to start with group_id options in config.
+  """
+  @spec stop(group_id :: any()) :: :ok
+  def stop(group_id) do
+    Registry.dispatch(LocationSimulator.Registry, group_id, fn entries ->
+      Logger.debug("stop all workers in group: #{inspect group_id}, number of workers: #{length(entries)}")
+      for {pid, id} <- entries do
+        send(pid, {:stop_worker, id})
+        Logger.debug("sent stop to worker: #{inspect id} of groupd #{inspect group_id}")
+      end
+    end)
   end
 
   @doc """

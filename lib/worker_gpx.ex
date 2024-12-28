@@ -95,6 +95,10 @@ defmodule LocationSimulator.WorkerGpx do
 
     state = Map.put(state, :gps, new_gps)
 
+    if Map.has_key?(config, :group_id) do
+      Registry.register(LocationSimulator.Registry, config.group_id, config.id)
+    end
+
     Logger.debug("start loop with gps data from file : #{inspect config.gpx_file}")
     loop_event(config, state)
   end
@@ -125,7 +129,7 @@ defmodule LocationSimulator.WorkerGpx do
   end
 
   # in case of gpx_time, we will use timestamp from gpx file.
-  defp loop_event(%{interval: :gpx_time} = config, %{gps: last_gps} = state) do
+  defp loop_event(%{interval: :gpx_time, id: id} = config, %{gps: last_gps} = state) do
     # get next gps data
     [gps | gps_data] = config.gps_data
     config = Map.put(config, :gps_data, gps_data)
@@ -151,25 +155,30 @@ defmodule LocationSimulator.WorkerGpx do
         {:ok, config} ->
           {config, Map.update!(state, :success, &(&1 + 1)), :continue}
         {:error, reason} ->
-          Logger.debug "failed to post data return code: #{inspect reason}"
+          Logger.debug "#{inspect id}, failed to post data return code: #{inspect reason}"
           {config, Map.update!(state, :failed, &(&1 + 1)), :continue}
         {:stop, reason} ->
-          Logger.debug "stop worker by client, reason: #{inspect reason}"
+          Logger.debug "#{inspect id}, stop worker by client, reason: #{inspect reason}"
           {config, state, :stop}
       end
 
     case is_stop do
         :stop ->
-          id = Map.get(config, :id, self())
-          Logger.debug("#{inspect id} stop by callback, id: #{inspect id}")
+          Logger.debug("#{inspect id}, stop by callback, id: #{inspect id}")
 
           loop_event(Map.put(config, :gps_data, []), state)
         _ ->
-          loop_event(config, state)
+          receive do
+            {:stop_worker, ^id} ->
+              Logger.debug("#{inspect id}, stop by client.")
+              loop_event(Map.put(config, :gps_data, []), state)
+            after 0 ->
+              loop_event(config, state)
+          end
       end
   end
 
-  defp loop_event(config, %{gps: last_gps} = state) do
+  defp loop_event(%{id: id} = config, %{gps: last_gps} = state) do
     # get next gps data
     [gps | gps_data] = config.gps_data
     config = Map.put(config, :gps_data, gps_data)
@@ -191,20 +200,25 @@ defmodule LocationSimulator.WorkerGpx do
         {:ok, config} ->
           {config, Map.update!(state, :success, &(&1 + 1)), :continue}
         {:error, reason} ->
-          Logger.debug "failed to post data return code: #{inspect reason}"
+          Logger.debug "#{inspect id}, failed to post data return code: #{inspect reason}"
           {config, Map.update!(state, :failed, &(&1 + 1)), :continue}
         {:stop, reason} ->
-          Logger.debug "stop worker by client, reason: #{inspect reason}"
+          Logger.debug "#{inspect id}, stop worker by client, reason: #{inspect reason}"
           {config, state, :stop}
       end
 
     case is_stop do
         :stop ->
-          id = Map.get(config, :id, self())
-          Logger.debug("#{inspect id} stop by callback, id: #{inspect id}")
+          Logger.debug("#{inspect id} stop by callback")
           loop_event(Map.put(config, :gps_data, []), state)
         _ ->
-          loop_event(config, state)
+          receive do
+            {:stop_worker, ^id} ->
+              Logger.debug("##{inspect id}, stop by client.")
+              loop_event(Map.put(config, :gps_data, []), state)
+            after 0 ->
+              loop_event(config, state)
+          end
       end
   end
 

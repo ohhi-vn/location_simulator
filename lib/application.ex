@@ -14,7 +14,8 @@ defmodule LocationSimulator.Application do
     children = [
       {PartitionSupervisor,
        child_spec: DynamicSupervisor,
-       name: LocationSimulator.DynamicSupervisor},
+       name: LocationSimulator.DynamicSupervisor,
+       partitions: 20},
        {Registry, keys: :duplicate, name: LocationSimulator.Registry}
     ]
 

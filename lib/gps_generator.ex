@@ -10,9 +10,8 @@ defmodule LocationSimulator.Gps do
   @doc """
   Generates a random location.
   """
-  @spec generate_pos :: {float, float}
+  @spec generate_pos :: {pos_integer(), pos_integer()}
   def generate_pos() do
-    :rand.seed(System.monotonic_time(:nanosecond))
     {:rand.uniform(90), :rand.uniform(180)}
   end
 

@@ -1,12 +1,10 @@
 defmodule LocationSimulator.MixProject do
-  Code.compiler_options(on_undefined_variable: :warn)
-
   use Mix.Project
 
   def project do
     [
       app: :location_simulator,
-      version: "0.8.1",
+      version: "0.9.0",
       build_path: "_build",
       config_path: "config/config.exs",
       deps_path: "deps",
@@ -45,7 +43,7 @@ defmodule LocationSimulator.MixProject do
   end
 
   defp description() do
-    "A library for generating fake GPS data or load GPS from GPX file/string using for dev/test. The library can generate a GPS series for simulating a route and support scalable for test workload."
+    "A library for generating fake GPS data or load GPS from GPX file/string using for dev/test. The library generates GPSs for simulating a route and scalable for test workload."
   end
 
   defp package() do
@@ -59,5 +57,3 @@ defmodule LocationSimulator.MixProject do
     ]
   end
 end
-
-# test new repo

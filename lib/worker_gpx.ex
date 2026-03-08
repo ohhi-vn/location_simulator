@@ -1,228 +1,111 @@
 defmodule LocationSimulator.WorkerGpx do
   @moduledoc """
-  Worker is a simulator that use for generating GPS data.
+  Simulates GPS movement by replaying tracks from GPX files.
 
-  Worker will call client follow :callback setting in config.
+  Each worker loads a single GPX file and emits one GPS event per
+  track-point.  The sleep interval between events is either:
 
-  Two start/stop event is used for start or init data and clean if need.
+  * A fixed integer (milliseconds)
+  * `:gpx_time` – the actual delta between successive track-point timestamps
 
-  `event` api is used for put GPS data to client.
-
-  Callbacks are declared in `LocationSimulator.Event` module.
+  See `LocationSimulator.Event` for the callback contract.
   """
 
   require Logger
 
-  alias LocationSimulator.Gpx
+  alias LocationSimulator.{Gpx, WorkerBase}
 
-  @doc """
-  Support for starting from supervisor.
-  """
-  @spec start_link(any) :: {:ok, pid}
-  def start_link(arg) do
-    pid = spawn_link(__MODULE__, :init, [arg])
-    {:ok, pid}
-  end
+  # ── OTP ────────────────────────────────────────────────────────────────────
 
+  @spec start_link(map()) :: {:ok, pid()}
+  def start_link(arg), do: WorkerBase.start_link(__MODULE__, arg)
 
-  @spec child_spec(map()) :: %{
-          id: any(),
-          restart: any(),
-          shutdown: any(),
-          start: {LocationSimulator.WorkerGpx, :start_link, [map(), ...]},
-          type: :worker
-        }
-  @doc """
-  Generate child spec for supervisor.
-  """
-  def child_spec(opts) when is_map(opts) do
-    %{
-      id: Map.get(opts, :id, __MODULE__),
-      start: {__MODULE__, :start_link, [opts]},
-      type: :worker,
-      restart:  Map.get(opts, :restart, :temporary),
-      shutdown: Map.get(opts, :shutdown, :brutal_kill)
-    }
-  end
+  @spec child_spec(map()) :: map()
+  def child_spec(opts), do: WorkerBase.child_spec(__MODULE__, opts)
 
-  @doc """
-  Entry point of worker, start event will be fired from here.
+  # ── Entry point ────────────────────────────────────────────────────────────
 
-  Init some data and go to loop function for generating GPS data.
-
-  Root GPS data will be generated in this function.
-  """
-  @spec init(map) :: :ok
-  def init(config) when is_map(config) do
-    state = %{
-      start_time: get_timestamp(),
-      success: 0,
-      failed: 0,
-      error: 0
-    }
-
+  @doc "Entry point called by `start_link/1`."
+  @spec init(map()) :: :ok
+  def init(config) do
     id = Map.get(config, :id, self())
-    %{callback: mod} = config
+    state = WorkerBase.init_state()
+    config = WorkerBase.fire_start!(config, state)
 
-    Logger.debug("#{inspect id}, call start event")
+    gps_points = Gpx.read_gpx(config.gpx_file)
 
-    # send start event
-    config = case mod.start(config, state) do
-      {:ok, new_config} ->
-        new_config
-      {:error, reason} ->
-        err = "call start event failed: #{inspect reason}"
-        Logger.error(err)
-        raise err
-    end
+    Logger.info(
+      "Worker #{inspect(id)}: loaded #{length(gps_points)} points from #{config.gpx_file}"
+    )
 
-    # load GPS data from GPX file
-    gps_data = Gpx.read_gpx(config.gpx_file)
-    Logger.info("#{inspect id} load gps data from file: #{inspect config.gpx_file}, length: #{length(gps_data)}")
+    [first | rest] = gps_points
 
+    gps = %{timestamp: 0, time: first.time, lat: first.lat, lon: first.lon, ele: first.ele}
 
-    # get first gps data
-    [gps | gps_data] = gps_data
-    config = Map.put(config, :gps_data, gps_data)
+    config = Map.put(config, :gps_data, rest)
+    state = Map.put(state, :gps, gps)
+
+    WorkerBase.maybe_register(config)
+
+    loop(config, state)
+  end
+
+  # ── Private: loop (terminal) ───────────────────────────────────────────────
+
+  defp loop(%{gps_data: []} = config, state) do
+    WorkerBase.fire_stop!(config, state)
+    :ok
+  end
+
+  # ── Private: loop (active) ─────────────────────────────────────────────────
+
+  defp loop(%{id: id} = config, %{gps: last_gps} = state) do
+    [point | rest] = config.gps_data
+    config = Map.put(config, :gps_data, rest)
+
+    sleep_ms = interval_ms(config.interval, last_gps, point)
+    Process.sleep(sleep_ms)
 
     new_gps = %{
-      timestamp: 0,
-      time: gps.time,
-      lon: gps.lon,
-      lat: gps.lat,
-      ele: gps.ele
+      timestamp: last_gps.timestamp + sleep_ms,
+      time: point.time,
+      lat: point.lat,
+      lon: point.lon,
+      ele: point.ele
     }
 
     state = Map.put(state, :gps, new_gps)
 
-    if Map.has_key?(config, :group_id) do
-      Registry.register(LocationSimulator.Registry, config.group_id, config.id)
+    {config, state, stop?} = dispatch_event(config, state)
+
+    cond do
+      stop? ->
+        loop(Map.put(config, :gps_data, []), state)
+
+      true ->
+        receive do
+          {:stop_worker, ^id} ->
+            Logger.debug("Worker #{inspect(id)}: stop received from group manager")
+            loop(Map.put(config, :gps_data, []), state)
+        after
+          0 ->
+            loop(config, state)
+        end
     end
-
-    Logger.debug("start loop with gps data from file : #{inspect config.gpx_file}")
-    loop_event(config, state)
   end
 
-  # Main function of worker, GPS data will be generated in here then trigger client's api.
-  # After fired all GPS data/ client send signal to stop, the function will fire stop event.
-  defp loop_event(%{gps_data: []} = config, state) do
-    stop_time = get_timestamp()
-    state = Map.put(state, :stop_time, stop_time)
-    %{callback: mod} = config
-    # send stop event
-    config = case mod.stop(config, state) do
-      {:ok, new_config} ->
-        new_config
-      {:error, reason} ->
-        err = "call start event failed: #{inspect reason}"
-        Logger.error(err)
-        raise err
+  # ── Private: helpers ───────────────────────────────────────────────────────
+
+  defp interval_ms(:gpx_time, last_gps, point),
+    do: NaiveDateTime.diff(point.time, last_gps.time, :millisecond)
+
+  defp interval_ms(ms, _last, _point) when is_integer(ms), do: ms
+
+  defp dispatch_event(%{callback: mod} = config, state) do
+    case mod.event(config, state) do
+      {:ok, new_config} -> {new_config, Map.update!(state, :success, &(&1 + 1)), false}
+      {:error, _reason} -> {config, Map.update!(state, :failed, &(&1 + 1)), false}
+      {:stop, _reason} -> {config, state, true}
     end
-
-    %{start_time: start_time} = state
-    %{success: s} = state
-    %{failed: f} = state
-    %{error: e} = state
-
-    id = Map.get(config, :id, self())
-    Logger.debug "Worker(#{inspect id}) DONE!, time: #{stop_time - start_time}s, success: #{s}, failed: #{f}, error: #{e}"
-  end
-
-  # in case of gpx_time, we will use timestamp from gpx file.
-  defp loop_event(%{interval: :gpx_time, id: id} = config, %{gps: last_gps} = state) do
-    # get next gps data
-    [gps | gps_data] = config.gps_data
-    config = Map.put(config, :gps_data, gps_data)
-
-    # sleep time between two gps data
-    # TO-DO: Move sleep to send event for can cancel sleep.
-    interval = NaiveDateTime.diff(gps.time, last_gps.time, :second) * 1_000
-    Process.sleep(interval)
-
-    new_gps = %{
-      timestamp: interval + last_gps.timestamp,
-      time: gps.time,
-      lon: gps.lon,
-      lat: gps.lat,
-      ele: gps.ele
-    }
-
-    state = Map.put(state, :gps, new_gps)
-    %{callback: mod} = config
-
-    {config, state, is_stop} =
-      case mod.event(config, state) do
-        {:ok, config} ->
-          {config, Map.update!(state, :success, &(&1 + 1)), :continue}
-        {:error, reason} ->
-          Logger.debug "#{inspect id}, failed to post data return code: #{inspect reason}"
-          {config, Map.update!(state, :failed, &(&1 + 1)), :continue}
-        {:stop, reason} ->
-          Logger.debug "#{inspect id}, stop worker by client, reason: #{inspect reason}"
-          {config, state, :stop}
-      end
-
-    case is_stop do
-        :stop ->
-          Logger.debug("#{inspect id}, stop by callback, id: #{inspect id}")
-
-          loop_event(Map.put(config, :gps_data, []), state)
-        _ ->
-          receive do
-            {:stop_worker, ^id} ->
-              Logger.debug("#{inspect id}, stop by client.")
-              loop_event(Map.put(config, :gps_data, []), state)
-            after 0 ->
-              loop_event(config, state)
-          end
-      end
-  end
-
-  defp loop_event(%{id: id} = config, %{gps: last_gps} = state) do
-    # get next gps data
-    [gps | gps_data] = config.gps_data
-    config = Map.put(config, :gps_data, gps_data)
-
-    Process.sleep(config.interval)
-
-    new_gps = %{
-      timestamp: config.interval + last_gps.timestamp,
-      lon: gps.lon,
-      lat: gps.lat,
-      ele: gps.ele
-    }
-
-    state = Map.put(state, :gps, new_gps)
-    %{callback: mod} = config
-
-    {config, state, is_stop} =
-      case mod.event(config, state) do
-        {:ok, config} ->
-          {config, Map.update!(state, :success, &(&1 + 1)), :continue}
-        {:error, reason} ->
-          Logger.debug "#{inspect id}, failed to post data return code: #{inspect reason}"
-          {config, Map.update!(state, :failed, &(&1 + 1)), :continue}
-        {:stop, reason} ->
-          Logger.debug "#{inspect id}, stop worker by client, reason: #{inspect reason}"
-          {config, state, :stop}
-      end
-
-    case is_stop do
-        :stop ->
-          Logger.debug("#{inspect id} stop by callback")
-          loop_event(Map.put(config, :gps_data, []), state)
-        _ ->
-          receive do
-            {:stop_worker, ^id} ->
-              Logger.debug("##{inspect id}, stop by client.")
-              loop_event(Map.put(config, :gps_data, []), state)
-            after 0 ->
-              loop_event(config, state)
-          end
-      end
-  end
-
-  defp get_timestamp do
-    :os.system_time(:seconds)
   end
 end

@@ -25,6 +25,4 @@ simu_traffic-*.tar
 # Temporary files, for example, from tests.
 /tmp/
 
-mix.lock
-
 .DS_Store

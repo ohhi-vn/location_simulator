@@ -69,7 +69,7 @@ defmodule LocationSimulatorTest do
   end
 
   defp collect(tag, count, timeout \\ 2_000) do
-     Enum.reduce_while(1..count, [], fn _, acc ->
+    Enum.reduce_while(1..count, [], fn _, acc ->
       receive do
         {^tag, data} -> {:cont, [data | acc]}
       after
@@ -77,7 +77,6 @@ defmodule LocationSimulatorTest do
       end
     end)
     |> Enum.reverse()
-
   end
 
   # ── ETS setup ─────────────────────────────────────────────────────────────
@@ -390,6 +389,52 @@ defmodule LocationSimulatorTest do
         end
 
       assert state.stop_time >= state.start_time
+    end
+  end
+
+  # ── GPX file start ────────────────────────────────────────────────────────
+
+  describe "start/1 with gpx_file" do
+    test "parses gpx file and replays points" do
+      LS.start(%{
+        worker: 1,
+        event: 3,
+        interval: 0,
+        gpx_file: "test/fixtures/test_track.gpx",
+        callback: TestEvent,
+        client: self()
+      })
+
+      gps =
+        receive do
+          {:gps, gps} -> gps
+        after
+          2_000 -> flunk("no gps event")
+        end
+
+      assert gps.lat == 10.0
+      assert gps.lon == 20.0
+    end
+  end
+
+  # ── DynamicSupervisor ─────────────────────────────────────────────────────
+
+  describe "LocationSimulator.DynamicSupervisor" do
+    test "start_simulator with spec without :id uses self()" do
+      spec = {LocationSimulator.Worker, %{callback: TestEvent, client: self(), worker: 1, event: 1, interval: 0}}
+      LocationSimulator.DynamicSupervisor.start_simulator([spec])
+
+      assert :ok == await(:stop)
+    end
+
+    test "start_link/1 delegates to OTP DynamicSupervisor" do
+      assert {:error, {:already_started, _pid}} =
+               LocationSimulator.DynamicSupervisor.start_link(:ok)
+    end
+
+    test "init/1 returns DynamicSupervisor init tuple" do
+      assert {:ok, %{strategy: :one_for_one, intensity: _, period: _, max_children: _}} =
+               LocationSimulator.DynamicSupervisor.init(:ok)
     end
   end
 end

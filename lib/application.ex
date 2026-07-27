@@ -13,18 +13,15 @@ defmodule LocationSimulator.Application do
 
     children = [
       {PartitionSupervisor,
-       child_spec: DynamicSupervisor,
-       name: LocationSimulator.DynamicSupervisor,
-       partitions: 20},
-       {Registry, keys: :duplicate, name: LocationSimulator.Registry}
+       child_spec: DynamicSupervisor, name: LocationSimulator.DynamicSupervisor, partitions: 20},
+      {Registry, keys: :duplicate, name: LocationSimulator.Registry}
     ]
 
-    Logger.debug("LocationSimulator application load with children: #{inspect children}")
+    Logger.debug("LocationSimulator application load with children: #{inspect(children)}")
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: LocationSimulator.Supervisor]
     Supervisor.start_link(children, opts)
   end
-
 end

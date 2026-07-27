@@ -10,4 +10,4 @@ config :location_simulator, :default_config,
   worker: 1,
   interval: 1,
   random_range: 1,
-  callback:  LocationSimulator.LoggerEvent
+  callback: LocationSimulator.LoggerEvent

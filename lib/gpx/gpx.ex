@@ -20,8 +20,9 @@ defmodule LocationSimulator.Gpx do
     case File.read(file) do
       {:ok, content} ->
         parse_gpx_content(content)
+
       {:error, reason} ->
-        raise "cannot read file #{inspect file}, reason: #{inspect reason}"
+        raise "cannot read file #{inspect(file)}, reason: #{inspect(reason)}"
     end
   end
 
@@ -42,7 +43,7 @@ defmodule LocationSimulator.Gpx do
       end
 
     %LocationSimulator.Gpx.GpsPoint{
-      lat: xml_el |> xpath(~x"./@lat"f) ,
+      lat: xml_el |> xpath(~x"./@lat"f),
       lon: xml_el |> xpath(~x"./@lon"f),
       ele: ele,
       time: xml_el |> xpath(~x"./time/text()"s) |> parse_datetime()

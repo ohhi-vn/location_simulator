@@ -10,7 +10,7 @@ defmodule LocationSimulator.LoggerEvent do
   require Logger
 
   @impl true
-  @spec start(map, %{:start_time => any, optional(any) => any}) :: {:ok, map}
+  @spec start(map, map()) :: {:ok, map}
   def start(config, state) do
     id = Map.get(config, :id, self())
     %{start_time: start_time} = state
@@ -29,24 +29,15 @@ defmodule LocationSimulator.LoggerEvent do
   end
 
   @impl true
-  @spec stop(map, %{
-          :error => any,
-          :failed => any,
-          :start_time => any,
-          :stop_time => any,
-          :success => any,
-          optional(any) => any
-        }) :: {:ok, map}
-  def stop(config, state) do
+  @spec stop(map, map) :: {:ok, map}
+  def stop(
+        config,
+        %{start_time: start_time, stop_time: stop_time, success: s, failed: f} = _state
+      ) do
     id = Map.get(config, :id, self())
-    %{start_time: start_time} = state
-    %{stop_time: stop_time} = state
-    %{success: s} = state
-    %{failed: f} = state
-    %{error: e} = state
 
     Logger.info(
-      "#{inspect(id)} is stopped, time: #{stop_time - start_time}s, success: #{s}, failed: #{f}, error: #{e}"
+      "#{inspect(id)} is stopped, time: #{stop_time - start_time}s, success: #{s}, failed: #{f}"
     )
 
     {:ok, config}

@@ -15,7 +15,7 @@ defmodule MyApp.TrackReplay do
   plug LocationSimulator.Plug.Callback, callback: MyApp.Handler
 end
 
-LocationSimulator.start(MyApp.TrackReplay, worker: 3, interval: :gpx_time)
+LocationSimulator.start(MyApp.TrackReplay, %{worker: 3, interval: :gpx_time})
 ```
 
 ## Source options
@@ -38,7 +38,7 @@ Sleeps for the exact time delta between consecutive track points, preserving the
 ### Fixed integer (for faster replay)
 
 ```elixir
-LocationSimulator.start(MyApp.TrackReplay, worker: 1, interval: 500)
+LocationSimulator.start(MyApp.TrackReplay, %{worker: 1, interval: 500})
 ```
 
 Each point is emitted 500ms apart, regardless of the original timestamps.
@@ -65,7 +65,7 @@ Each replayed point has the following keys:
   lat: 21.0278,           # float — latitude
   lon: 105.8342,          # float — longitude
   ele: 10.5,              # float — elevation in metres
-  timestamp: 1700000000,  # integer — ms since worker start
+  timestamp: 1700000000,  # integer — wall-clock ms (:os.system_time(:millisecond))
   time: ~N[2024-01-01 12:00:00]  # NaiveDateTime — original GPX timestamp
 }
 ```
@@ -76,7 +76,7 @@ If a GPX track point lacks an `<ele>` element, the elevation defaults to `0`.
 
 ## Custom interval logic
 
-Combine with your own plug for custom timing:
+Combine with your own plug for custom timing (timing is owned by the worker loop; this adds extra pacing on top):
 
 ```elixir
 defmodule MyApp.PacingPlug do
@@ -87,10 +87,10 @@ defmodule MyApp.PacingPlug do
 
   @impl true
   def call(pipeline, _opts) do
-    # Apply random jitter to original GPX timing
-    sleep = Map.get(pipeline.assigns, :sleep_ms, 1000)
-    jitter = floor(sleep * 0.1)
-    Process.sleep(sleep + Enum.random(0..jitter))
+    # Apply random jitter to the configured interval
+    interval = Map.get(pipeline.config, :interval, 1_000)
+    jitter = max(floor(interval * 0.1), 1)
+    Process.sleep(interval + Enum.random(0..jitter))
     pipeline
   end
 end

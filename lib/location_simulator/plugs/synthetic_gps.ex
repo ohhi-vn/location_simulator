@@ -2,14 +2,11 @@ defmodule LocationSimulator.Plug.SyntheticGps do
   @moduledoc """
   Generates the next synthetic GPS point in the current direction.
 
-  Expects `config.direction` to be a resolved direction atom.
+  Expects `config.direction` to be a resolved direction atom. A direction of
+  `:random` (or a missing `:direction` key) is resolved once and then fixed
+  for the worker's lifetime — the worker travels consistently in one direction.
+
   Handles both coordinate movement and elevation changes.
-
-  ## Pipeline assignments
-
-    | Key | Description |
-    |---|---|
-    | `:direction` | resolved direction (set by this plug if missing) |
   """
 
   @behaviour LocationSimulator.Plug
@@ -32,11 +29,8 @@ defmodule LocationSimulator.Plug.SyntheticGps do
     %{pipeline | config: config, state: %{state | gps: gps}, gps: gps}
   end
 
-  defp resolve_direction(%{direction: :random} = config) do
-    %{config | direction: Enum.random(@directions)}
-  end
-
-  defp resolve_direction(%{direction: _} = config), do: config
+  # A fixed direction is kept; anything else (:random or missing) is resolved once.
+  defp resolve_direction(%{direction: dir} = config) when dir != :random, do: config
 
   defp resolve_direction(config) do
     Map.put(config, :direction, Enum.random(@directions))

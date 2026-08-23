@@ -14,7 +14,7 @@ defmodule LocationSimulator.Gpx.GpsPoint do
           lat: float,
           lon: float,
           ele: float,
-          time: DateTime.t() | nil
+          time: NaiveDateTime.t() | nil
         }
   defstruct [
     :lat,

@@ -5,11 +5,14 @@ defmodule LocationSimulator.Worker do
   The worker resolves the pipeline module, builds the per-event plug chain,
   fires lifecycle callbacks, and loops until the event counter is exhausted
   or a stop signal arrives.
+
+  GPX replay data (the remaining track points) lives in the worker `state`,
+  not in the config, so user callbacks never receive it.
   """
 
   require Logger
 
-  alias LocationSimulator.{Gpx, Gps}
+  alias LocationSimulator.{Gps, Gpx, Pipeline}
 
   @spec start_link(map()) :: {:ok, pid()}
   def start_link(arg), do: start_link(__MODULE__, arg)
@@ -37,12 +40,10 @@ defmodule LocationSimulator.Worker do
   def init(config) do
     state = init_state()
     config = fire_start!(config, state)
-    :rand.seed(:exsss)
 
-    {config, plugs} = build_plugs(config)
-
-    gps = initial_gps(config)
-    state = Map.put(state, :gps, gps)
+    {config, plugs, source} = build_plugs(config)
+    state = put_gpx_data(source, config, state)
+    state = Map.put(state, :gps, initial_gps(config, state))
 
     maybe_register(config)
 
@@ -55,12 +56,11 @@ defmodule LocationSimulator.Worker do
   end
 
   defp loop(config, state, plugs, counter, id) do
-    if done?(config, counter) do
+    if done?(counter) do
       fire_stop!(config, state)
       :ok
     else
-      sleep_ms = sleep_duration(config, state)
-      Process.sleep(sleep_ms)
+      Process.sleep(sleep_duration(config, state))
 
       pipeline = %{
         config: config,
@@ -90,8 +90,8 @@ defmodule LocationSimulator.Worker do
     end
   end
 
-  defp done?(_config, 0), do: true
-  defp done?(_config, _counter), do: false
+  defp done?(0), do: true
+  defp done?(_counter), do: false
 
   defp build_plugs(config) do
     pipeline_mod = Map.get(config, :pipeline)
@@ -102,7 +102,7 @@ defmodule LocationSimulator.Worker do
     source_gps_plug = source_gps_module(source.type)
     source_opts = source_gps_plug.init(config)
 
-    {config, [{source_gps_plug, source_opts} | user_plugs]}
+    {config, [{source_gps_plug, source_opts} | user_plugs], source}
   end
 
   defp resolve_pipeline(nil, config) do
@@ -114,7 +114,7 @@ defmodule LocationSimulator.Worker do
   end
 
   defp resolve_pipeline(mod, _config) when is_atom(mod) do
-    LocationSimulator.Pipeline.__pipeline__(mod)
+    Pipeline.__pipeline__(mod)
   end
 
   defp default_synthetic_source(config) do
@@ -143,25 +143,31 @@ defmodule LocationSimulator.Worker do
     config
     |> Map.put(:direction, source.direction || Map.get(config, :direction, :random))
     |> Map.put(:elevation, source.elevation || Map.get(config, :elevation, 0))
-    |> Map.put(:elevation_way, source.elevation_way || Map.get(config, :elevation_way, :no_up_down))
+    |> Map.put(
+      :elevation_way,
+      source.elevation_way || Map.get(config, :elevation_way, :no_up_down)
+    )
     |> then(fn cfg ->
       if source.started_gps, do: Map.put(cfg, :started_gps, source.started_gps), else: cfg
     end)
-    |> then(fn cfg ->
-      if source.type == :gpx && source.gpx_file,
-        do: load_gpx_data(cfg, source.gpx_file),
-        else: cfg
-    end)
   end
 
-  defp load_gpx_data(config, glob) do
-    files = Path.wildcard(glob)
-    if files == [], do: raise("No GPX files matched: #{glob}")
-
-    config
-    |> Map.put(:gpx_data, Gpx.read_gpx(hd(files)))
-    |> Map.put(:gpx_files, files)
+  # Loads the GPX track for this worker into `state.gpx_data`.
+  # When the glob matches multiple files, workers are assigned files in order
+  # (worker id 1 → first file), cycling through when there are more workers.
+  defp put_gpx_data(%LocationSimulator.Dsl.Source{type: :gpx, gpx_file: glob}, config, state)
+       when is_binary(glob) do
+    files = Gpx.resolve_files!(glob)
+    file = select_gpx_file(files, Map.get(config, :id))
+    Map.put(state, :gpx_data, Gpx.read_gpx(file))
   end
+
+  defp put_gpx_data(_source, _config, state), do: state
+
+  defp select_gpx_file(files, id) when is_integer(id) and id >= 1,
+    do: Enum.at(files, rem(id - 1, length(files)))
+
+  defp select_gpx_file(files, _id), do: hd(files)
 
   defp source_gps_module(:synthetic), do: LocationSimulator.Plug.SyntheticGps
   defp source_gps_module(:gpx), do: LocationSimulator.Plug.GpxReplay
@@ -177,7 +183,11 @@ defmodule LocationSimulator.Worker do
   defp next_counter(:infinity), do: :infinity
   defp next_counter(n) when is_integer(n), do: n - 1
 
-  defp sleep_duration(%{interval: :gpx_time, gpx_data: [next | _]}, %{gps: %{time: prev_time}}) when not is_nil(prev_time) do
+  defp sleep_duration(%{interval: :gpx_time}, %{
+         gps: %{time: prev_time},
+         gpx_data: [next | _]
+       })
+       when not is_nil(prev_time) do
     max(NaiveDateTime.diff(next.time, prev_time, :millisecond), 0)
   end
 
@@ -191,15 +201,15 @@ defmodule LocationSimulator.Worker do
 
   defp sleep_duration(_config, _state), do: 100
 
-  defp initial_gps(%{started_gps: {lat, lon, ele}}) do
+  defp initial_gps(%{started_gps: {lat, lon, ele}}, _state) do
     %{timestamp: 0, lat: lat, lon: lon, ele: ele}
   end
 
-  defp initial_gps(%{gpx_data: [first | _rest]}) do
+  defp initial_gps(_config, %{gpx_data: [first | _rest]}) do
     %{timestamp: 0, time: first.time, lat: first.lat, lon: first.lon, ele: first.ele}
   end
 
-  defp initial_gps(config) do
+  defp initial_gps(config, _state) do
     {lat, lon} = Gps.generate_pos()
     ele = Map.get(config, :elevation, 0)
     %{timestamp: 0, lat: lat, lon: lon, ele: ele}
@@ -234,7 +244,7 @@ defmodule LocationSimulator.Worker do
 
     Logger.debug(
       "Worker #{inspect(id)} DONE – elapsed: #{elapsed}s, " <>
-        "success: #{state.success}, failed: #{state.failed}, error: #{state.error}"
+        "success: #{state.success}, failed: #{state.failed}"
     )
   end
 
@@ -248,7 +258,7 @@ defmodule LocationSimulator.Worker do
   defp maybe_register(_config), do: :ok
 
   defp init_state do
-    %{start_time: unix_seconds(), success: 0, failed: 0, error: 0}
+    %{start_time: unix_seconds(), success: 0, failed: 0}
   end
 
   defp unix_seconds, do: :os.system_time(:seconds)

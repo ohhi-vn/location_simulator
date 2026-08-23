@@ -14,7 +14,6 @@ defmodule LocationSimulator.Event do
   | `:start_time` | `non_neg_integer()` (unix s)| all callbacks       |
   | `:success`    | `non_neg_integer()`         | `event/2`, `stop/2` |
   | `:failed`     | `non_neg_integer()`         | `event/2`, `stop/2` |
-  | `:error`      | `non_neg_integer()`         | `event/2`, `stop/2` |
   | `:gps`        | `t:gps_point/0`             | `event/2`, `stop/2` |
   | `:stop_time`  | `non_neg_integer()` (unix s)| `stop/2` only       |
 
@@ -25,7 +24,7 @@ defmodule LocationSimulator.Event do
   | `:lat`       | `float()` | Latitude in decimal degrees                |
   | `:lon`       | `float()` | Longitude in decimal degrees               |
   | `:ele`       | `float()` | Elevation in metres                        |
-  | `:timestamp` | `integer()` | Milliseconds elapsed since worker start  |
+  | `:timestamp` | `integer()` | Wall-clock milliseconds (`:os.system_time(:millisecond)`) |
   | `:time`      | `NaiveDateTime.t() \| nil` | Original GPX timestamp (GPX workers only) |
 
   ## Minimal example

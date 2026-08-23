@@ -85,7 +85,7 @@ defmodule MyApp.Tracker do
   plug LocationSimulator.Plug.Callback, callback: MyApp.GpsHandler
 end
 
-LocationSimulator.start(MyApp.Tracker, worker: 3, event: 100, interval: 1_000)
+LocationSimulator.start(MyApp.Tracker, %{worker: 3, event: 100, interval: 1_000})
 ```
 
 ### With a plain config map (legacy API)
@@ -135,7 +135,7 @@ defmodule MyApp.GpxReplay do
   plug LocationSimulator.Plug.Callback, callback: MyApp.Handler
 end
 
-LocationSimulator.start(MyApp.GpxReplay, worker: 3, interval: :gpx_time)
+LocationSimulator.start(MyApp.GpxReplay, %{worker: 3, interval: :gpx_time})
 ```
 
 ## Writing a callback module
@@ -202,7 +202,7 @@ source :synthetic, started_gps: {20.9599, 107.0666, 0}
 Workers can be grouped and stopped together:
 
 ```elixir
-LocationSimulator.start(MyApp.Pipeline, worker: 4, group_id: :my_group)
+LocationSimulator.start(MyApp.Pipeline, %{worker: 4, group_id: :my_group})
 # later:
 LocationSimulator.stop(:my_group)
 ```

@@ -4,7 +4,7 @@ defmodule LocationSimulator.MixProject do
   def project do
     [
       app: :location_simulator,
-      version: "1.0.0",
+      version: "1.1.0",
       elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -28,7 +28,13 @@ defmodule LocationSimulator.MixProject do
       test_coverage: [
         tool: Mix.Tasks.Test.Coverage,
         output: "cover",
-        summary: [threshold: 80]
+        summary: [threshold: 90],
+        # Spark generates large boilerplate modules for DSL entities; their
+        # internals are covered by Spark's own suite, not ours.
+        ignore_modules: [
+          LocationSimulator.Dsl.Plugins.Plug,
+          LocationSimulator.Dsl.Source.Source
+        ]
       ]
     ]
   end
@@ -47,7 +53,14 @@ defmodule LocationSimulator.MixProject do
     [
       {:spark, "~> 2.7"},
       {:sweet_xml, "~> 0.7"},
-      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
+
+      # Test dependencies
+      {:excoveralls, "~> 0.18", only: :test},
+
+      # Code quality
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev], runtime: false}
     ]
   end
 
@@ -114,8 +127,10 @@ defmodule LocationSimulator.MixProject do
       test: ["test --exclude integration"],
       "test.unit": ["test --exclude integration"],
       "test.all": ["test"],
-      quality: ["format --check-formatted", "dialyzer"],
-      cover: ["test --cover"]
+      # Testing & Coverage
+      coveralls: ["test --cover", "coveralls.html"],
+      # Code Quality
+      quality: ["format --check-formatted", "credo --strict"]
     ]
   end
 end

@@ -8,7 +8,7 @@ defmodule LocationSimulator.DynamicSupervisor do
   use DynamicSupervisor
   require Logger
 
-  @spec start_link(any) :: :ignore | {:error, any} | {:ok, pid}
+  @spec start_link(term()) :: :ignore | {:error, any} | {:ok, pid}
   def start_link(init_arg) do
     DynamicSupervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
   end
@@ -27,23 +27,35 @@ defmodule LocationSimulator.DynamicSupervisor do
     DynamicSupervisor.init(strategy: :one_for_one)
   end
 
-  @spec start_simulator(maybe_improper_list) :: :ok
+  @doc """
+  Starts all worker specs.
+
+  Returns `{:error, reason}` of the first failing child; already-started
+  workers are left running.
+  """
+  @spec start_simulator([tuple()]) :: :ok | {:error, term()}
   def start_simulator(workers) when is_list(workers) do
     Logger.debug("start workers: #{inspect(workers)}")
 
-    Enum.each(workers, fn spec ->
-      {_, options} = spec
-
-      key =
-        case Map.get(options, :id) do
-          nil -> self()
-          id -> id
-        end
-
-      DynamicSupervisor.start_child(
-        {:via, PartitionSupervisor, {LocationSimulator.DynamicSupervisor, key}},
-        spec
-      )
+    workers
+    |> Enum.reduce_while(:ok, fn spec, :ok ->
+      case start_child(spec) do
+        {:ok, _pid} -> {:cont, :ok}
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
     end)
   end
+
+  defp start_child(spec) do
+    key = routing_key(spec)
+
+    DynamicSupervisor.start_child(
+      {:via, PartitionSupervisor, {__MODULE__, key}},
+      spec
+    )
+  end
+
+  # Workers with the same id are routed to the same partition.
+  defp routing_key({_module, %{id: id}}) when id != nil, do: id
+  defp routing_key(_spec), do: self()
 end

@@ -7,7 +7,7 @@ defmodule LocationSimulator.Plug.SleepTest do
     test "returns opts as-is" do
       assert Sleep.init([]) == []
       assert Sleep.init(%{}) == %{}
-      assert Sleep.init([key: :value]) == [key: :value]
+      assert Sleep.init(key: :value) == [key: :value]
     end
   end
 

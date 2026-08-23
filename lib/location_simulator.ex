@@ -29,33 +29,26 @@ defmodule LocationSimulator do
 
   require Logger
 
-  alias LocationSimulator.DynamicSupervisor, as: Sup
+  alias LocationSimulator.{Dsl.Source, DynamicSupervisor, Gpx, Pipeline}
 
-  @app_config Application.compile_env(:location_simulator, :default_config, %{})
-
-  @type direction ::
-          :north
-          | :south
-          | :east
-          | :west
-          | :north_east
-          | :north_west
-          | :south_east
-          | :south_west
-          | :random
+  @type start_result :: :ok | {:error, term()}
 
   @doc """
   Starts workers with a pipeline module and runtime config.
 
   The pipeline module defines the GPS source and the plug chain.
   The config map supplies runtime parameters (worker count, event count, etc.).
+
+  Returns `:ok`, or `{:error, reason}` when a worker fails to start or the
+  configured GPX glob matches no files.
   """
-  @spec start(module(), map()) :: :ok
+  @spec start(module(), map()) :: start_result()
   def start(pipeline_mod, runtime_config) when is_atom(pipeline_mod) and is_map(runtime_config) do
     runtime_config
     |> Map.put(:pipeline, pipeline_mod)
+    |> validate_gpx!(gpx_glob(pipeline_mod, runtime_config))
     |> build_worker_specs()
-    |> Sup.start_simulator()
+    |> DynamicSupervisor.start_simulator()
   end
 
   @doc """
@@ -63,17 +56,18 @@ defmodule LocationSimulator do
 
   See the module doc for supported config keys.
   """
-  @spec start(map()) :: :ok
+  @spec start(map()) :: start_result()
   def start(config) when is_map(config) do
     config
+    |> validate_gpx!(Map.get(config, :gpx_file))
     |> build_worker_specs()
-    |> Sup.start_simulator()
+    |> DynamicSupervisor.start_simulator()
   end
 
   @doc "Starts one worker with the default / application config."
-  @spec start() :: :ok
+  @spec start() :: start_result()
   def start do
-    default_config() |> build_worker_specs() |> Sup.start_simulator()
+    default_config() |> build_worker_specs() |> DynamicSupervisor.start_simulator()
   end
 
   @doc """
@@ -94,49 +88,44 @@ defmodule LocationSimulator do
   @doc "Returns the merged default config (application config overrides built-in defaults)."
   @spec default_config() :: map()
   def default_config do
+    # Read at runtime so consumers can configure after this library is compiled.
+    app_config = Application.get_env(:location_simulator, :default_config, [])
+
     %{
-      worker: fetch(:worker, 1),
-      event: fetch(:event, 1),
-      interval: fetch(:interval, 100),
-      random_range: fetch(:random_range, 10),
-      direction: fetch(:direction, :random),
-      elevation: fetch(:elevation, 0),
-      elevation_way: fetch(:elevation_way, :no_up_down),
-      callback: fetch(:callback, LocationSimulator.LoggerEvent)
+      worker: fetch(app_config, :worker, 1),
+      event: fetch(app_config, :event, 1),
+      interval: fetch(app_config, :interval, 100),
+      random_range: fetch(app_config, :random_range, 10),
+      direction: fetch(app_config, :direction, :random),
+      elevation: fetch(app_config, :elevation, 0),
+      elevation_way: fetch(app_config, :elevation_way, :no_up_down),
+      callback: fetch(app_config, :callback, LocationSimulator.LoggerEvent)
     }
   end
 
-  defp fetch(key, default) do
-    Keyword.get(@app_config, key, default)
+  defp fetch(app_config, key, default) do
+    Keyword.get(app_config, key, default)
   end
 
-  defp build_worker_specs(%{pipeline: _mod} = config) do
-    build_specs(config.worker, config, [])
+  defp gpx_glob(pipeline_mod, runtime_config) do
+    case Pipeline.__pipeline__(pipeline_mod) do
+      {%Source{type: :gpx, gpx_file: glob}, _plugs} when is_binary(glob) -> glob
+      _ -> Map.get(runtime_config, :gpx_file)
+    end
   end
 
-  defp build_worker_specs(%{gpx_file: glob} = config) do
-    files = Path.wildcard(glob)
-    if files == [], do: raise("No GPX files matched: #{glob}")
-    build_gpx_specs(config.worker, config, files, files, [])
+  defp validate_gpx!(config, nil), do: config
+
+  defp validate_gpx!(config, glob) do
+    Gpx.resolve_files!(glob)
+    config
   end
 
-  defp build_worker_specs(config) do
-    build_specs(config.worker, config, [])
-  end
+  defp build_worker_specs(config), do: build_specs(config.worker, config, [])
 
   defp build_specs(0, _config, acc), do: acc
 
   defp build_specs(n, config, acc) do
     build_specs(n - 1, config, [{LocationSimulator.Worker, Map.put(config, :id, n)} | acc])
-  end
-
-  defp build_gpx_specs(0, _config, _cur, _all, acc), do: acc
-
-  defp build_gpx_specs(n, config, [], all, acc),
-    do: build_gpx_specs(n, config, all, all, acc)
-
-  defp build_gpx_specs(n, config, [file | rest], all, acc) do
-    spec = {LocationSimulator.Worker, config |> Map.put(:id, n) |> Map.put(:gpx_file, file)}
-    build_gpx_specs(n - 1, config, rest, all, [spec | acc])
   end
 end

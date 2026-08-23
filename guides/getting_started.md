@@ -9,7 +9,7 @@ Add `location_simulator` to your `mix.exs` dependencies:
 ```elixir
 def deps do
   [
-    {:location_simulator, "~> 1.0}
+    {:location_simulator, "~> 1.0"}
   ]
 end
 ```
@@ -29,7 +29,7 @@ You'll see output like:
 ```
 [info] Start location worker: 1, timestamp: 1700000000
 [info] 1, new GPS: %{lat: 60.0, lon: 87.0, ele: 0, timestamp: ...}
-[info] 1 is stopped, time: 0s, success: 1, failed: 0, error: 0
+[info] 1 is stopped, time: 0s, success: 1, failed: 0
 ```
 
 ## With a pipeline (recommended)
@@ -45,7 +45,7 @@ defmodule MyApp.Simulation do
   plug LocationSimulator.Plug.Callback, callback: MyApp.GpsHandler
 end
 
-LocationSimulator.start(MyApp.Simulation, worker: 3, event: 100, interval: 1_000)
+LocationSimulator.start(MyApp.Simulation, %{worker: 3, event: 100, interval: 1_000})
 ```
 
 ## With a callback module

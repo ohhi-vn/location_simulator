@@ -322,17 +322,20 @@ defmodule LocationSimulatorTest do
     test "first gps point matches configured start position" do
       lat = 21.0278
       lon = 105.8342
-      LS.start(base_config(%{started_gps: {lat, lon, 0}}))
 
-      # The first gps event from a 2-event worker
-      LS.start(base_config(%{event: 2, started_gps: {lat, lon, 0}}))
+      LS.start(base_config(%{event: 1, started_gps: {lat, lon, 0.0}}))
 
-      receive do
-        # skip first (generated) point
-        {:gps, _} -> :ok
-      after
-        2_000 -> flunk()
-      end
+      gps =
+        receive do
+          {:gps, gps} -> gps
+        after
+          2_000 -> flunk("no gps event received")
+        end
+
+      # First event moves one step (a few metres) from the seeded position.
+      assert abs(gps.lat - lat) < 0.001
+      assert abs(gps.lon - lon) < 0.001
+      assert gps.ele == 0.0
     end
   end
 
@@ -363,7 +366,7 @@ defmodule LocationSimulatorTest do
   # ── state completeness ────────────────────────────────────────────────────
 
   describe "stop state" do
-    test "stop state contains start_time, stop_time, success, failed, error" do
+    test "stop state contains start_time, stop_time, success, failed" do
       LS.start(base_config(%{event: 3}))
 
       state =
@@ -373,7 +376,7 @@ defmodule LocationSimulatorTest do
           2_000 -> flunk("no stop event received")
         end
 
-      for key <- [:start_time, :stop_time, :success, :failed, :error] do
+      for key <- [:start_time, :stop_time, :success, :failed] do
         assert Map.has_key?(state, key), "stop state missing #{inspect(key)}"
       end
     end
@@ -415,13 +418,68 @@ defmodule LocationSimulatorTest do
       assert gps.lat == 10.0
       assert gps.lon == 20.0
     end
+
+    test "distributes multiple files across workers" do
+      LS.start(%{
+        worker: 2,
+        event: 1,
+        interval: 0,
+        gpx_file: "test/fixtures/*.gpx",
+        callback: TestEvent,
+        client: self()
+      })
+
+      lats =
+        for _ <- 1..2 do
+          receive do
+            {:gps, gps} -> gps.lat
+          after
+            2_000 -> flunk("no gps event")
+          end
+        end
+
+      # Worker 1 replays the first fixture, worker 2 the second.
+      assert Enum.sort(lats) == [10.0, 30.0]
+    end
+
+    test "raises when glob matches no files" do
+      assert_raise RuntimeError, ~r/No GPX files matched/, fn ->
+        LS.start(%{worker: 1, event: 1, interval: 0, gpx_file: "test/fixtures/nope_*.gpx"})
+      end
+    end
+
+    test "interval :gpx_time with started_gps sleeps 0 before first point" do
+      LS.start(%{
+        worker: 1,
+        event: 1,
+        interval: :gpx_time,
+        gpx_file: "test/fixtures/test_track.gpx",
+        started_gps: {10.0, 20.0, 5.0},
+        callback: TestEvent,
+        client: self()
+      })
+
+      gps =
+        receive do
+          {:gps, gps} -> gps
+        after
+          2_000 -> flunk("no gps event")
+        end
+
+      # The replayed point comes from the track; started_gps only seeds timing.
+      assert gps.lat == 10.0
+      assert :ok == await(:stop)
+    end
   end
 
   # ── DynamicSupervisor ─────────────────────────────────────────────────────
 
   describe "LocationSimulator.DynamicSupervisor" do
     test "start_simulator with spec without :id uses self()" do
-      spec = {LocationSimulator.Worker, %{callback: TestEvent, client: self(), worker: 1, event: 1, interval: 0}}
+      spec =
+        {LocationSimulator.Worker,
+         %{callback: TestEvent, client: self(), worker: 1, event: 1, interval: 0}}
+
       LocationSimulator.DynamicSupervisor.start_simulator([spec])
 
       assert :ok == await(:stop)
@@ -435,6 +493,103 @@ defmodule LocationSimulatorTest do
     test "init/1 returns DynamicSupervisor init tuple" do
       assert {:ok, %{strategy: :one_for_one, intensity: _, period: _, max_children: _}} =
                LocationSimulator.DynamicSupervisor.init(:ok)
+    end
+
+    test "start_simulator raises for invalid child spec" do
+      assert_raise FunctionClauseError, fn ->
+        LocationSimulator.DynamicSupervisor.start_simulator([
+          {LocationSimulator.Worker, "not a map"}
+        ])
+      end
+    end
+
+    test "start_simulator propagates child start errors" do
+      defmodule FailingWorker do
+        def child_spec(_opts) do
+          %{
+            id: __MODULE__,
+            start: {__MODULE__, :start_link, []},
+            type: :worker,
+            restart: :temporary
+          }
+        end
+
+        def start_link, do: {:error, :nope}
+      end
+
+      assert {:error, :nope} =
+               LocationSimulator.DynamicSupervisor.start_simulator([{FailingWorker, []}])
+    end
+  end
+
+  # ── Worker edge cases ─────────────────────────────────────────────────────
+
+  describe "worker gpx selection without :id" do
+    test "worker without :id loads the first matched file" do
+      spec = {
+        LocationSimulator.Worker,
+        %{
+          event: 1,
+          interval: 0,
+          gpx_file: "test/fixtures/*.gpx",
+          callback: TestEvent,
+          client: self()
+        }
+      }
+
+      LocationSimulator.DynamicSupervisor.start_simulator([spec])
+
+      gps =
+        receive do
+          {:gps, gps} -> gps
+        after
+          2_000 -> flunk("no gps event")
+        end
+
+      assert gps.lat == 10.0
+    end
+  end
+
+  describe "stop callback failures" do
+    test "stop returning :error crashes the worker after firing stop" do
+      defmodule StopFailEvent do
+        @behaviour LocationSimulator.Event
+
+        @impl true
+        def start(config, _state), do: {:ok, config}
+
+        @impl true
+        def event(config, _state), do: {:ok, config}
+
+        @impl true
+        def stop(config, state) do
+          if client = Map.get(config, :client), do: send(client, {:stop_called, state})
+          {:error, :boom}
+        end
+      end
+
+      LS.start(base_config(%{callback: StopFailEvent}))
+
+      assert_receive {:stop_called, _state}, 2_000
+    end
+  end
+
+  # ── Runtime application config ────────────────────────────────────────────
+
+  describe "default_config/0 reads runtime application env" do
+    test "reflects application env set after compilation" do
+      Application.put_env(:location_simulator, :default_config,
+        worker: 7,
+        callback: __MODULE__.TestEvent
+      )
+
+      on_exit(fn -> Application.delete_env(:location_simulator, :default_config) end)
+
+      config = LS.default_config()
+      assert config.worker == 7
+      assert config.callback == TestEvent
+      # unset keys fall back to built-in defaults
+      assert config.event == 1
     end
   end
 end

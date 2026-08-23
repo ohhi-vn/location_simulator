@@ -67,27 +67,27 @@ defmodule LocationSimulator.PipelineTest do
   defmodule SyntheticPipeline do
     use LocationSimulator.Pipeline
 
-    source :synthetic, direction: :north, elevation: 50
+    source(:synthetic, direction: :north, elevation: 50)
 
-    plug LocationSimulator.Plug.Callback
+    plug(LocationSimulator.Plug.Callback)
   end
 
   defmodule PipelineWithTrackerPlug do
     use LocationSimulator.Pipeline
 
-    source :synthetic, direction: :south
+    source(:synthetic, direction: :south)
 
-    plug TrackerPlug
-    plug LocationSimulator.Plug.Callback
+    plug(TrackerPlug)
+    plug(LocationSimulator.Plug.Callback)
   end
 
   defmodule PipelineWithHaltPlug do
     use LocationSimulator.Pipeline
 
-    source :synthetic, direction: :west
+    source(:synthetic, direction: :west)
 
-    plug HaltPlug
-    plug LocationSimulator.Plug.Callback
+    plug(HaltPlug)
+    plug(LocationSimulator.Plug.Callback)
   end
 
   # ── Helpers ─────────────────────────────────────────────────────────────────
@@ -129,7 +129,7 @@ defmodule LocationSimulator.PipelineTest do
     test "pipeline module has __pipeline__/1" do
       {source, plugs} = LocationSimulator.Pipeline.__pipeline__(SyntheticPipeline)
       assert source.type == :synthetic
-      assert length(plugs) > 0
+      assert match?([_ | _], plugs)
     end
 
     test "pipeline module contains source entity" do
@@ -141,8 +141,8 @@ defmodule LocationSimulator.PipelineTest do
     test "pipeline source defaults" do
       defmodule DefaultPipeline do
         use LocationSimulator.Pipeline
-        source :synthetic
-        plug LocationSimulator.Plug.Callback
+        source(:synthetic)
+        plug(LocationSimulator.Plug.Callback)
       end
 
       [source] = Spark.Dsl.Extension.get_entities(DefaultPipeline, [:source])
@@ -156,7 +156,7 @@ defmodule LocationSimulator.PipelineTest do
       {source, plugs} = LocationSimulator.Pipeline.__pipeline__(SyntheticPipeline)
       assert source.type == :synthetic
       assert source.direction == :north
-      assert length(plugs) > 0
+      assert match?([_ | _], plugs)
     end
   end
 
@@ -192,8 +192,8 @@ defmodule LocationSimulator.PipelineTest do
     test "worker count is respected" do
       defmodule MultiPipeline do
         use LocationSimulator.Pipeline
-        source :synthetic
-        plug LocationSimulator.Plug.Callback
+        source(:synthetic)
+        plug(LocationSimulator.Plug.Callback)
       end
 
       LS.start(MultiPipeline, base_config(%{worker: 3}))
@@ -257,9 +257,9 @@ defmodule LocationSimulator.PipelineTest do
 
       defmodule OptsPipeline do
         use LocationSimulator.Pipeline
-        source :synthetic
-        plug InitOptsPlug, opts: [my_option: :value]
-        plug LocationSimulator.Plug.Callback
+        source(:synthetic)
+        plug(InitOptsPlug, opts: [my_option: :value])
+        plug(LocationSimulator.Plug.Callback)
       end
 
       LS.start(OptsPipeline, base_config())
@@ -279,9 +279,9 @@ defmodule LocationSimulator.PipelineTest do
 
       defmodule ConfigPipeline do
         use LocationSimulator.Pipeline
-        source :synthetic
-        plug ConfigPlug
-        plug LocationSimulator.Plug.Callback
+        source(:synthetic)
+        plug(ConfigPlug)
+        plug(LocationSimulator.Plug.Callback)
       end
 
       LS.start(ConfigPipeline, base_config())
@@ -305,8 +305,8 @@ defmodule LocationSimulator.PipelineTest do
     test "synthetic direction :random is resolved" do
       defmodule RandomPipeline do
         use LocationSimulator.Pipeline
-        source :synthetic, direction: :random
-        plug LocationSimulator.Plug.Callback
+        source(:synthetic, direction: :random)
+        plug(LocationSimulator.Plug.Callback)
       end
 
       LS.start(RandomPipeline, base_config())
@@ -336,10 +336,10 @@ defmodule LocationSimulator.PipelineTest do
 
       defmodule CompositePipeline do
         use LocationSimulator.Pipeline
-        source :synthetic
-        plug PlugA
-        plug PlugB
-        plug LocationSimulator.Plug.Callback
+        source(:synthetic)
+        plug(PlugA)
+        plug(PlugB)
+        plug(LocationSimulator.Plug.Callback)
       end
 
       LS.start(CompositePipeline, base_config())
@@ -353,8 +353,8 @@ defmodule LocationSimulator.PipelineTest do
     test "source with started_gps tuple" do
       defmodule StartedGpsPipeline do
         use LocationSimulator.Pipeline
-        source :synthetic, started_gps: {21.0, 105.0, 10.0}
-        plug LocationSimulator.Plug.Callback
+        source(:synthetic, started_gps: {21.0, 105.0, 10.0})
+        plug(LocationSimulator.Plug.Callback)
       end
 
       [source] = Spark.Dsl.Extension.get_entities(StartedGpsPipeline, [:source])
@@ -364,8 +364,8 @@ defmodule LocationSimulator.PipelineTest do
     test "source with elevation_way :up" do
       defmodule ElevationUpPipeline do
         use LocationSimulator.Pipeline
-        source :synthetic, elevation: 100, elevation_way: :up
-        plug LocationSimulator.Plug.Callback
+        source(:synthetic, elevation: 100, elevation_way: :up)
+        plug(LocationSimulator.Plug.Callback)
       end
 
       [source] = Spark.Dsl.Extension.get_entities(ElevationUpPipeline, [:source])
@@ -376,8 +376,8 @@ defmodule LocationSimulator.PipelineTest do
     test "source with elevation_way :down" do
       defmodule ElevationDownPipeline do
         use LocationSimulator.Pipeline
-        source :synthetic, elevation: 50, elevation_way: :down
-        plug LocationSimulator.Plug.Callback
+        source(:synthetic, elevation: 50, elevation_way: :down)
+        plug(LocationSimulator.Plug.Callback)
       end
 
       [source] = Spark.Dsl.Extension.get_entities(ElevationDownPipeline, [:source])
@@ -388,12 +388,15 @@ defmodule LocationSimulator.PipelineTest do
     test "source with all options set" do
       defmodule AllOptionsPipeline do
         use LocationSimulator.Pipeline
-        source :synthetic,
+
+        source(:synthetic,
           direction: :north_east,
           elevation: 200,
           elevation_way: :up,
           started_gps: {10.0, 20.0, 30.0}
-        plug LocationSimulator.Plug.Callback
+        )
+
+        plug(LocationSimulator.Plug.Callback)
       end
 
       [source] = Spark.Dsl.Extension.get_entities(AllOptionsPipeline, [:source])
@@ -407,8 +410,8 @@ defmodule LocationSimulator.PipelineTest do
     test "source with type :gpx and gpx_file" do
       defmodule GpxSourcePipeline do
         use LocationSimulator.Pipeline
-        source :gpx, gpx_file: "test/fixtures/*.gpx"
-        plug LocationSimulator.Plug.Callback
+        source(:gpx, gpx_file: "test/fixtures/*.gpx")
+        plug(LocationSimulator.Plug.Callback)
       end
 
       [source] = Spark.Dsl.Extension.get_entities(GpxSourcePipeline, [:source])
@@ -458,19 +461,61 @@ defmodule LocationSimulator.PipelineTest do
         client: self()
       })
 
-      stops = Enum.reduce(1..5, [], fn _, acc ->
-        receive do
-          {:stop, _} -> [:ok | acc]
-        after
-          2_000 -> flunk("no stop event")
-        end
-      end)
+      stops =
+        Enum.reduce(1..5, [], fn _, acc ->
+          receive do
+            {:stop, _} -> [:ok | acc]
+          after
+            2_000 -> flunk("no stop event")
+          end
+        end)
 
       assert length(stops) == 5
     end
 
+    test "gpx pipeline source distributes files across workers" do
+      defmodule GpxDistributePipeline do
+        use LocationSimulator.Pipeline
+        source(:gpx, gpx_file: "test/fixtures/*.gpx")
+        plug(LocationSimulator.Plug.Callback)
+      end
+
+      LS.start(GpxDistributePipeline, %{
+        worker: 2,
+        event: 1,
+        interval: 0,
+        callback: TestEvent,
+        client: self()
+      })
+
+      lats =
+        for _ <- 1..2 do
+          receive do
+            {:gps, gps} -> gps.lat
+          after
+            2_000 -> flunk("no gps event")
+          end
+        end
+
+      # Worker 1 replays the first fixture, worker 2 the second.
+      assert Enum.sort(lats) == [10.0, 30.0]
+    end
+
+    test "start/2 raises when pipeline gpx glob matches no files" do
+      defmodule BadGlobPipeline do
+        use LocationSimulator.Pipeline
+        source(:gpx, gpx_file: "test/fixtures/nope_*.gpx")
+        plug(LocationSimulator.Plug.Callback)
+      end
+
+      assert_raise RuntimeError, ~r/No GPX files matched/, fn ->
+        LS.start(BadGlobPipeline, %{worker: 1, event: 1})
+      end
+    end
+
     test "sleep_duration fallback with no interval" do
       LS.start(%{worker: 1, event: 1, callback: TestEvent, client: self()})
+
       receive do
         {:stop, _} -> :ok
       after
@@ -485,7 +530,7 @@ defmodule LocationSimulator.PipelineTest do
     test "resolve_source falls back to default when no source defined" do
       defmodule NoSourcePipeline do
         use LocationSimulator.Pipeline
-        plug LocationSimulator.Plug.Callback
+        plug(LocationSimulator.Plug.Callback)
       end
 
       {source, _plugs} = LocationSimulator.Pipeline.__pipeline__(NoSourcePipeline)

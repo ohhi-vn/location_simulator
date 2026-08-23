@@ -27,6 +27,9 @@ defmodule LocationSimulator.Pipeline do
   use Spark.Dsl,
     default_extensions: [extensions: [LocationSimulator.Dsl]]
 
+  alias LocationSimulator.Dsl.Source
+  alias Spark.Dsl.Extension
+
   @doc false
   def __pipeline__(module) do
     source = resolve_source(module)
@@ -35,15 +38,15 @@ defmodule LocationSimulator.Pipeline do
   end
 
   defp resolve_source(module) do
-    case Spark.Dsl.Extension.get_entities(module, [:source]) do
+    case Extension.get_entities(module, [:source]) do
       [source] -> source
-      [] -> %LocationSimulator.Dsl.Source{type: :synthetic, direction: :random}
+      [] -> %Source{type: :synthetic, direction: :random}
     end
   end
 
   defp resolve_plugs(module) do
     module
-    |> Spark.Dsl.Extension.get_entities([:plugins])
+    |> Extension.get_entities([:plugins])
     |> Enum.map(fn %{module: mod, opts: opts} ->
       {mod, mod.init(opts)}
     end)

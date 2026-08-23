@@ -67,22 +67,22 @@ defmodule LocationSimulator.Dsl do
           |> Entity.build!()
 
   @plug Entity.new(:plug, LocationSimulator.Dsl.Plugin,
-            describe: "A plug module included in the runtime pipeline",
-            args: [:module],
-            schema: [
-              module: [
-                type: {:behaviour, LocationSimulator.Plug},
-                required: true,
-                doc: "The plug module (must implement `LocationSimulator.Plug` behaviour)"
-              ],
-              opts: [
-                type: :any,
-                default: [],
-                doc: "Options passed to `c:LocationSimulator.Plug.init/1`"
-              ]
+          describe: "A plug module included in the runtime pipeline",
+          args: [:module],
+          schema: [
+            module: [
+              type: {:behaviour, LocationSimulator.Plug},
+              required: true,
+              doc: "The plug module (must implement `LocationSimulator.Plug` behaviour)"
+            ],
+            opts: [
+              type: :any,
+              default: [],
+              doc: "Options passed to `c:LocationSimulator.Plug.init/1`"
             ]
-          )
-          |> Entity.build!()
+          ]
+        )
+        |> Entity.build!()
 
   @sections [
     Section.new(:source,
@@ -90,13 +90,14 @@ defmodule LocationSimulator.Dsl do
       entities: [@source],
       singleton_entity_keys: [:type],
       top_level?: true
-    ) |> Section.build!(),
-
+    )
+    |> Section.build!(),
     Section.new(:plugins,
       describe: "Event-processing plugs in execution order",
       entities: [@plug],
       top_level?: true
-    ) |> Section.build!()
+    )
+    |> Section.build!()
   ]
 
   use Spark.Dsl.Extension, sections: @sections

@@ -53,7 +53,7 @@ The pipeline is a map with keys:
 | Key | Type | Description |
 |---|---|---|
 | `config` | `map()` | Worker config (shared, mutable) |
-| `state` | `map()` | Worker state (start_time, success, failed, error, gps) |
+| `state` | `map()` | Worker state (`start_time`, `success`, `failed`, `gps`; plus `gpx_data` for GPX workers) |
 | `gps` | `map()` | Current GPS point `%{lat, lon, ele, timestamp}` |
 | `halted` | `boolean()` | When `true`, stops processing |
 | `assigns` | `map()` | Arbitrary data for plug-to-plug communication |
